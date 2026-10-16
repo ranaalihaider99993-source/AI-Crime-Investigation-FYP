@@ -12,6 +12,7 @@ from scripts.data import (CLASSES, canonical_clip, class_summary, file_hash,
                           source_id, split_manifest, split_signature,
                           validate_manifest, write_csv)
 from scripts.classifier import VideoDataset, train, evaluate
+from scripts.dataset_paths import resolve_inspection_paths
 
 
 def read_csv(path):
@@ -67,7 +68,7 @@ def _persist_report(report, output):
 
 def prepare_smoke(data_root, inspection_dir, output, config):
     """Reuse notebook 01 artifacts, write checks even on failure, never approve/train."""
-    root, inspection_dir, output = Path(data_root).resolve(), Path(inspection_dir).resolve(), Path(output).resolve()
+    root, inspection_dir, output = Path(data_root).absolute(), Path(inspection_dir).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     report = dict(automatic_status='FAIL', human_mapping_review='PENDING', training_executed=False,
                   config=dict(config), data_root=str(root), inspection_dir=str(inspection_dir),
@@ -100,6 +101,20 @@ def prepare_smoke(data_root, inspection_dir, output, config):
         report['artifact_hashes'] = artifact_hashes(inspection_dir)
         return f'{len(rows)} manifest rows; {len(duplicates)} excluded copies'
     if not check('load existing inspection artifacts', load):
+        _persist_report(report, output); return report
+
+    def resolve_paths():
+        nonlocal root, inspection_dir, rows, inspection, duplicates
+        report['original_inspection_dir'] = str(inspection_dir)
+        report['original_artifact_hashes'] = artifact_hashes(inspection_dir)
+        root, inspection_dir, resolution = resolve_inspection_paths(root, inspection_dir, output/'resolved_inspection')
+        rows = read_csv(inspection_dir/'manifest.csv')
+        inspection = json.loads((inspection_dir/'inspection.json').read_text())
+        duplicates = read_csv(inspection_dir/'excluded_duplicates.csv')
+        report.update(data_root=str(root), inspection_dir=str(inspection_dir), path_resolution=resolution,
+                      artifact_hashes=artifact_hashes(inspection_dir))
+        return f"Verified root: {root}; relocated copies: {resolution['relocated_copies']}; SHA256 reverified: {resolution['reverified_sha256_files']}"
+    if not check('verified KaggleHub root and saved-path resolution', resolve_paths):
         _persist_report(report, output); return report
 
     def manifest_check():
@@ -198,7 +213,7 @@ def prepare_smoke(data_root, inspection_dir, output, config):
                 require(cv2.imwrite(str(output/'review_sheet.jpg'), np.vstack(tiles)), 'Cannot save review sheet')
                 return 'Selected frames decoded; no byte-identical clips across splits; review_sheet.jpg written; visual labels remain unverified'
             check('selected-frame decode, exact-byte leakage and review sheet', frames)
-    report['automatic_status'] = 'PASS' if all(c['status'] == 'PASS' for c in report['checks']) and len(report['checks']) == 7 else 'FAIL'
+    report['automatic_status'] = 'PASS' if all(c['status'] == 'PASS' for c in report['checks']) and len(report['checks']) == 8 else 'FAIL'
     _persist_report(report, output)
     return report
 
@@ -213,6 +228,7 @@ def run_reviewed_smoke(report_path, runs_dir, config, source_mapping_reviewed=Fa
     report = json.loads(Path(report_path).read_text())
     require(report['automatic_status'] == 'PASS', 'Automatic validation failed; fix it before training')
     require(report['config'] == config, 'Configuration changed; rerun preparation and review')
+    require(report['original_artifact_hashes'] == artifact_hashes(report['original_inspection_dir']), 'Original inspection artifacts changed; rerun preparation and review')
     require(report['artifact_hashes'] == artifact_hashes(report['inspection_dir']), 'Inspection artifacts changed; rerun preparation and review')
     require(report['split_signature'] == split_signature(report['split_manifest']) and
             report['split_file_sha256'] == file_hash(report['split_manifest']), 'Candidate split changed; rerun preparation and review')

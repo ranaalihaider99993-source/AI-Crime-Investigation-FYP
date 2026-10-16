@@ -125,7 +125,8 @@ def class_summary(rows):
 
 
 def inspect(root, output):
-    root, output = Path(root).resolve(), Path(output).resolve()
+    from scripts.dataset_paths import resolve_dataset_root
+    root, output = resolve_dataset_root(root), Path(output).resolve()
     if not root.is_dir():
         raise FileNotFoundError(root)
     if output == root:
@@ -134,14 +135,19 @@ def inspect(root, output):
     # Exclude generated inspection outputs if the caller placed them below root.
     files = sorted((p for p in root.rglob('*') if p.is_file() and output not in p.parents),
                    key=lambda p: (len(p.relative_to(root).parts), str(p.relative_to(root)).casefold(), str(p.relative_to(root))))
+    for path in files:
+        if not path.resolve().is_relative_to(root):
+            raise ValueError(f'Dataset file symlink escapes verified root: {path}')
     candidates = defaultdict(list)
     for path in files:
         if path.suffix.lower() in VIDEO_EXT:
             candidates[canonical_clip(path, root)].append(path)
-    rows, duplicates = [], []
+    rows, duplicates, clip_hashes = [], [], {}
     for clip, copies in sorted(candidates.items()):
         kept = copies[0]  # shortest relative path, then case-insensitive + exact lexical order
-        kept_hash = file_hash(kept) if len(copies) > 1 else None
+        # Persist evidence even for single-copy clips, enabling verified relocation.
+        kept_hash = file_hash(kept)
+        clip_hashes[clip] = kept_hash
         for excluded in copies[1:]:
             if kept.stat().st_size != excluded.stat().st_size or file_hash(excluded) != kept_hash:
                 conflict = dict(canonical_clip=clip, kept_path=str(kept), conflicting_path=str(excluded))
@@ -159,7 +165,7 @@ def inspect(root, output):
     validate_manifest(rows)
     unmapped = [r for r in rows if not r['label']]
     # Keep raw directory counts separate from deduplicated clip/category counts.
-    report = dict(schema_version=2, raw_video_files=sum(len(v) for v in candidates.values()),
+    report = dict(schema_version=2, dataset_root=str(root), clip_sha256=clip_hashes, raw_video_files=sum(len(v) for v in candidates.values()),
                   unique_video_clips=len(rows), excluded_duplicate_copies=len(duplicates),
                   unique_original_sources=len({r['source'] for r in rows}),
                   canonicalization='Leading case-insensitive DCSASS Dataset wrappers removed; lowercase relative keys; original-video basename source IDs',

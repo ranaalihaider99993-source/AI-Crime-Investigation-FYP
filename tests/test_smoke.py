@@ -21,7 +21,7 @@ def test_automatic_report_is_not_review_or_training(tmp_path):
     assert report['automatic_status'] == 'PASS'
     assert report['human_mapping_review'] == 'PENDING'
     assert report['training_executed'] is False
-    assert len(report['checks']) == 7
+    assert len(report['checks']) == 8
     assert all(not v for v in report['source_overlap'].values())
     assert report['available_readable']['Fighting']['sources'] == 3
     assert all(report['split_counts'][s]['Fighting'] == {'clips':1,'sources':1} for s in ['train','val','test'])

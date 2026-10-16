@@ -55,6 +55,7 @@ notebooks/02_Crime_Classification_Training.ipynb
 notebooks/03_Scenario_GRU_Training.ipynb
 notebooks/04_Model_Evaluation.ipynb
 scripts/data.py           # real-file inspection and grouped splitting
+scripts/dataset_paths.py  # verified KaggleHub roots and hash-checked path rebasing
 scripts/preprocess.py     # preprocessing CLI
 scripts/classifier.py     # CNN, video sampling, training and evaluation
 scripts/smoke.py          # automatic report, human gate and bounded GPU launch
@@ -93,7 +94,7 @@ lowercases the remaining relative clip key. Thus `DCSASS Dataset/...` and
 source directory components: equal segment basenames from different sources are distinct.
 Among copies, it retains the shortest relative path, then case-insensitive/exact lexical
 order. SHA-256 verifies every excluded copy; conflicting bytes stop inspection and write
-`duplicate_conflict.json`. Hashing scans duplicate files fully and can take time; decoding
+`duplicate_conflict.json`. New inspections hash every retained clip and duplicate copy, which can take time; decoding
 runs only for the retained copies. This is path-identity deduplication, not detection of
 similar scenes stored under unrelated names. The new selected-clip preflight also rejects
 byte-identical videos across different source IDs/splits, but cannot detect re-encoded duplicates. `excluded_duplicates.csv` preserves each
@@ -179,6 +180,46 @@ manifests and checkpoints from the old duplicated/five-class artifacts. In a reu
 runtime, notebooks 01/02 fast-forward a clean checkout and evict stale project module
 imports; local checkout edits cause an error instead of being overwritten.
 
+## Recovering from a dataset-root/path mismatch
+
+Saved manifests contain absolute paths, while `kagglehub.dataset_download()` may return
+an inner wrapper directory or a different cache/mounted location in another session.
+The old direct containment comparison could therefore reject valid saved dataset paths.
+Both notebooks now print the returned path and the **verified dataset package root**.
+
+`resolve_dataset_root` recognizes only this dataset's exact KaggleHub cache identity
+(`kagglehub/datasets/mateohervas/dcsass-dataset/versions/<number>`) and Kaggle mounted-input
+layouts. It may lift known `DCSASS Dataset` wrappers to that package boundary. It never
+selects a filesystem common ancestor or ascends a custom download directory merely because
+its name resembles a wrapper. Category/source subdirectories are rejected as download roots.
+Resolved video paths, including symlink targets, must remain inside the verified root.
+
+Notebook 02 normally **does not require rerunning notebook 01** for a location-only mismatch:
+
+1. Reopen the latest GitHub notebook 02 (an already-open/Drive copy may have older cells).
+2. Restart the Colab session to clear old variables/imports, retain/select the T4 runtime,
+   and **Run all**. The setup updates a clean checkout. Authorize Drive mounting as prompted.
+3. Leave both training/review flags **False**. Read the root-resolution check in the report.
+   It records the selected path, verified root, relocation count and SHA-256 rechecks.
+4. If the download location changed, notebook 02 writes a separate verified snapshot under
+   `smoke_preparation/resolved_inspection/`, including `path_relocations.csv`. The original
+   `inspection/` files are unchanged. Canonical clip/source IDs, labels, readability evidence,
+   duplicate hashes and canonical split membership are preserved.
+
+For relocation, current files must match the saved canonical relative identities and copy
+counts, exist within the verified current root, and match recorded SHA-256 content evidence.
+Old files outside that root are treated only as historical path strings and are never read.
+The legacy two-copy inspection already records a hash for each clip in its duplicate audit;
+new notebook 01 inspections also record `dataset_root` and `clip_sha256` for single-copy clips.
+Rechecking relocated copies streams their bytes and can take time.
+
+**Rerun notebook 01 only if instructed by a failed check**: missing content/hash evidence,
+a changed dataset release or copy layout, differing hashes, or invalid canonical identities
+cannot be repaired by trusting paths alone. An unrecognized old root without recorded
+provenance also requires fresh inspection. Do not disable containment or manually replace
+path prefixes. Neither resolving paths nor a PASS report grants source-mapping approval
+or enables training. Source review and the two-epoch launch remain separate user actions.
+
 ## What the automatic report does and does not verify
 
 `smoke_preparation/validation.json` and `validation.md` separate **automatic PASS/FAIL**,
@@ -189,7 +230,8 @@ zero canonical source overlap, all sampled frame decoding and byte-identical lea
 among the selected clips. Very short clips reuse decoded frames for repeated sample indices.
 
 The existing notebook 01 duplicate SHA-256 records are checked for consistency with counts,
-current paths and file sizes; the full dataset is not rehashed. If its contents changed,
+current paths and file sizes; unchanged-location files are not all rehashed. Relocation rechecks every moved copy
+against saved SHA-256 evidence. If its contents changed,
 rerun notebook 01. Only the 12 selected clips are hashed again; their hashes, candidate split
 and inspection artifacts are rechecked before training to bind review to unchanged inputs.
 Unknown source naming fails automatically rather than assuming independence. The review

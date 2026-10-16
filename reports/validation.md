@@ -109,3 +109,45 @@ Run all with flags False, review the automatically generated report and source s
 then enable both flags only after human review and run the launch and result cells.
 Actual successful runs are stored under `classifier/runs/<timestamp>-<id>/`; notebook 04
 now reads the latest completed run pointer. Full training remains blocked by launcher bounds.
+
+## Dataset-root/path validation fix
+
+Latest complete suite: **34 tests passed** in the cloud CPU environment.
+`python -m compileall -q scripts tests` and whitespace checks also pass.
+
+Root cause: notebook 02 compared persisted absolute manifest paths directly with the
+current `DATA` directory. A valid path from the cache version's primary `DCSASS Dataset/`
+copy could lie outside a selected inner `dcsass dataset/DCSASS Dataset/` directory. Across
+sessions the current KaggleHub cache version or mounted path can also differ. The user's
+exact selected `DATA` value was not available to this agent; both mismatch cases are
+reproduced by the regression tests.
+
+Changes and verified coverage:
+
+- Both notebooks normalize recognized package/wrapper layouts and print returned versus
+  verified roots. No arbitrary common-ancestor expansion or containment bypass is used.
+- The exact reported Abuse path is reproduced under a temporary
+  `root/.cache/kagglehub/datasets/mateohervas/dcsass-dataset/versions/1` tree, with the inner
+  mirror selected. Validation passes without moving files or changing source IDs.
+- Legacy schema-v2 snapshots (without root metadata) relocate safely from cache version 1
+  to version 2 using their recorded duplicate SHA-256 evidence. A test verifies that old
+  out-of-bound video bytes are never read even when those files still exist.
+- A recorded custom root can relocate after the old download is deleted. Kaggle mounted
+  input layouts are supported. Canonical split signatures remain identical before/after.
+- Rebinding preserves original artifacts byte-for-byte and writes a separate runtime
+  inspection snapshot and relocation audit. Original and resolved artifact hashes are
+  both bound to the existing guarded training launcher.
+- Missing files, altered bytes (including equal-size changes), unknown external path
+  provenance, wrong relative identities, missing hash evidence, traversal, category-root
+  selection and file/wrapper symlink escapes fail closed. No partially rebound manifest
+  is saved on these failures.
+- New inspections record the verified `dataset_root` and SHA-256 for every retained clip,
+  including single-copy clips, so later relocation has content evidence.
+- The human-review/training flags remain False. Existing four-class, duplicate, source
+  leakage, preflight, GPU-gate and CPU model tests continue to pass.
+
+No real Colab GPU training or real-data metrics were executed or observed in this fix.
+For a location-only failure, reopen updated notebook 02, restart its session and Run all
+with both flags False. Notebook 01 is unnecessary when saved identities/copy counts and
+content hashes match; rerun it only when the explicit report says evidence/content differs
+or cannot be verified. Hash verification of relocated copies may take time.
