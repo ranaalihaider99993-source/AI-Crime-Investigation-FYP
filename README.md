@@ -260,6 +260,47 @@ The report is saved in Drive under
   `incident_independence=UNVERIFIED`, `training_executed=false`.
 - `review_cases.csv`: per-clip warnings/errors for review.
 
+The current utility also generates:
+
+- `review_summary.md`: concise counts, technical blockers, prioritized suspicious pairs
+  (cross-split cases first), and all selected sources with pending label/incident review.
+  If there are more than ten pairs, the summary says how many remain in the full report.
+- `human_review_queue.csv`: every selected clip remains `PENDING` for both its semantic
+  label and incident/source independence, including clips with no automatic alert.
+- `selected_clips.csv`: the exact bound selection snapshot, not the complete dataset.
+- `export_info.json`: scope, generation time, source-manifest hash and export-file hashes.
+- `review_artifacts.zip`: those metadata files plus the HTML/JSON/case report. It contains
+  representative frame images inside HTML, but **no raw videos or model checkpoints**.
+
+### Generate and export the real review (no training)
+
+This agent cannot inspect your Drive session when Colab access is blocked. Successful
+preparation reported by you is not a substitute for reading the actual review artifacts.
+No real suspicious pair names, verified labels or incident decisions are claimed until the
+real files are available. The notebook uses its actual validated KaggleHub selection and
+video paths; it does not load the synthetic demonstration used in earlier local tests.
+
+1. Reopen the latest GitHub notebook 02, keep/select the T4 runtime, and **Run all** with
+   `SOURCE_MAPPING_REVIEWED=False` and `RUN_PROTOTYPE_TRAINING=False`. Mount Drive when prompted.
+2. The temporal-review cell displays the concise summary and visual report and saves them
+   under this exact Drive folder:
+
+   ```text
+   MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/temporal_review/
+   ```
+
+3. Download `review_artifacts.zip` from that Drive folder. Alternatively, in the new export
+   cell set **only** `DOWNLOAD_REAL_REVIEW=True` and rerun that cell. This export flag is
+   unrelated to training approval; leave both training/review flags **False**.
+4. Extract the ZIP. Read `review_summary.md`, open `review.html` locally to see the embedded
+   temporal frames, and inspect `review_cases.csv` and `human_review_queue.csv`. Compare
+   suspicious original videos where frames do not resolve uncertainty. Technical failures
+   require correction; uncertain labels and incident relationships require human judgment.
+
+Colab's absolute folder is `/content/drive/MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/temporal_review/`.
+Notebook 01 does not need rerunning solely for summary/export support if its saved artifacts
+still pass validation. Editing a pending checklist does not grant approval or enable training.
+
 Up to **12 unique positions** are sampled across each clip's reported frame range, using
 available videos instead of only the original three-frame sheet. Short clips report the
 actual smaller sample count. Unknown-length videos get bounded sampling of at most the

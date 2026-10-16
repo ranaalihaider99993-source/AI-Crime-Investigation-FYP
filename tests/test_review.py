@@ -45,6 +45,11 @@ def test_temporal_report_no_human_approval(dataset,tmp_path):
     assert all(c['temporal']['unique_samples']==12 for c in result['clips'])
     assert all(c['temporal']['frame_indices'][0]==0 and c['temporal']['frame_indices'][-1]==23 for c in result['clips'])
     assert not result['pairs']
+    assert result['summary']['label_reviews_pending']==12
+    assert result['summary']['incident_reviews_pending']==12
+    assert result['summary']['suspicious_pairs']==0
+    assert result['summary']['human_approval']=='PENDING'
+    assert len(read_csv(tmp_path/'review/human_review_queue.csv'))==12
     page=(tmp_path/'review/review.html').read_text()
     assert page.count('src="data:image/jpeg;base64,')==12
     assert 'UNVERIFIED' in page and 'Human mapping approval' in page
@@ -61,6 +66,12 @@ def test_similar_temporal_sequences_are_uncertain_not_incident_proof(dataset,tmp
     pair=next(p for p in result['pairs'] if p['left']==0 and result['clips'][p['right']]['source']==b['source'])
     assert pair['kind']=='possible_shared_scene_UNCERTAIN' and pair['cross_split']
     assert pair['temporal_matches']['matching_samples']>=3
+    assert result['summary']['cross_split_flagged_pairs']>=1
+    assert result['summary']['uncertain_similarity_pairs']>=1
+    finding=next(p for p in result['summary']['pair_findings'] if p['left_source']==a['source'] and p['right_source']==b['source'])
+    assert finding['priority']=='CROSS-SPLIT INVESTIGATION'
+    summary=(tmp_path/'review/review_summary.md').read_text()
+    assert a['source'] in summary and b['source'] in summary
     assert result['human_review']=='PENDING'
     assert 'class="warn"' in (tmp_path/'review/review.html').read_text()
 
@@ -72,6 +83,9 @@ def test_exact_duplicates_fail_technical_review(dataset,tmp_path):
     result=review_selected(manifest,root,tmp_path/'review')
     assert result['technical_status']=='FAIL'
     assert any(p['kind']=='exact_file_duplicate' and p['cross_split'] for p in result['pairs'])
+    assert result['summary']['exact_file_duplicate_pairs']>=1
+    assert result['summary']['technical_errors']>=1
+    assert 'TECHNICAL BLOCKER' in (tmp_path/'review/review_summary.md').read_text()
     assert result['human_review']=='PENDING'
 
 
@@ -123,3 +137,41 @@ def test_temporal_report_must_match_guarded_launch(dataset,tmp_path,monkeypatch)
     with pytest.raises(ValueError,match='technical failures'):
         run_reviewed_smoke(tmp_path/'prep/validation.json',tmp_path/'runs',CONFIG,True,True,False,temporal_review_path=review_path)
     assert not (tmp_path/'runs').exists()
+
+
+def test_export_contains_only_current_review_artifacts(dataset,tmp_path):
+    from zipfile import ZipFile
+    import hashlib
+    root,manifest,_=dataset
+    output=tmp_path/'review'
+    result=review_selected(manifest,root,output,scope='Synthetic regression input only; not real DCSASS review')
+    with ZipFile(output/'review_artifacts.zip') as archive:
+        names=set(archive.namelist())
+        assert names=={'review.html','review.json','review_cases.csv','review_summary.md',
+                       'human_review_queue.csv','selected_clips.csv','export_info.json'}
+        info=json.loads(archive.read('export_info.json'))
+        assert info['valid_manifest_snapshot'] is True
+        assert info['human_approval']=='PENDING' and info['training_executed'] is False
+        assert archive.read('selected_clips.csv')==manifest.read_bytes()
+        for name,digest in info['files_sha256'].items():
+            assert hashlib.sha256(archive.read(name)).hexdigest()==digest
+        assert json.loads(archive.read('review.json'))['manifest_sha256']==result['manifest_sha256']
+        assert 'Synthetic regression' in info['scope']
+    assert all(r['label_review']=='PENDING' and r['incident_review']=='PENDING'
+               for r in read_csv(output/'human_review_queue.csv'))
+
+
+def test_failed_review_export_does_not_retain_old_selected_snapshot(dataset,tmp_path):
+    from zipfile import ZipFile
+    root,manifest,_=dataset;output=tmp_path/'review'
+    review_selected(manifest,root,output)
+    rows=read_csv(manifest);rows[0]['label']='Normal'
+    write_csv(manifest,rows,list(rows[0]))
+    result=review_selected(manifest,root,output)
+    assert result['technical_status']=='FAIL'
+    assert read_csv(output/'selected_clips.csv')==[]
+    assert read_csv(output/'human_review_queue.csv')==[]
+    with ZipFile(output/'review_artifacts.zip') as archive:
+        assert json.loads(archive.read('export_info.json'))['valid_manifest_snapshot'] is False
+        assert json.loads(archive.read('review.json'))['technical_status']=='FAIL'
+    assert 'NOT EXECUTED' in (output/'review_summary.md').read_text()

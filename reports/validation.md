@@ -185,3 +185,36 @@ investigate uncertain cases before explicit human approval; only then is the exi
 12-clip/two-epoch GPU smoke the next permitted training experiment.
 
 The self-contained synthetic HTML was rendered locally with Chromium: 12 cards and 12 embedded contact sheets were present, with the synthetic-only scope visible. This offline rendering check is not evidence of Colab access.
+
+## Real-review summary and export update
+
+Complete available local suite: **44 tests passed**. Python compilation and whitespace
+checks passed. These are regression checks on temporary generated videos, not a real-data
+review or GPU training run.
+
+The existing temporal review now additionally writes a concise `review_summary.md`, embeds
+structured summary counts/pair findings in `review.json`, records every selected label and
+incident relationship as pending in `human_review_queue.csv`, and creates a bounded
+`review_artifacts.zip` export. The bundle includes HTML, JSON, summary, case CSV, pending
+queue, selected-manifest snapshot and file-integrity metadata. Raw videos, checkpoints,
+credentials and synthetic demonstration files are not exported.
+
+Tests verify that even zero-alert clips retain pending semantic and incident reviews,
+uncertain cross-split pairs appear by actual source ID in the summary, confirmed byte
+copies are technical blockers, ZIP member contents/hashes match the current report, and
+an invalid rerun cannot export an old selected-manifest snapshot. The notebook's actual
+export cell is exercised with downloading disabled; both training flags remain False.
+
+A fresh Colab browser attempt failed with `net::ERR_TUNNEL_CONNECTION_FAILED`. No Drive
+connector was available. The user's 8/8 automatic checks and T4 availability remain
+user-reported. The agent did not access the real selected clips, generate their real report
+in Drive, list actual suspicious pairs, approve semantics/incidents, or train a model.
+No real accuracy or checkpoint results are claimed. No new synthetic demonstration was
+presented as fulfilling the real-data request.
+
+To generate the real artifacts, reopen latest notebook 02 and Run all with both flags False.
+The temporal cell uses the actual `AUTOMATIC_REPORT` selection and verified dataset root.
+Output: `MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/temporal_review/`.
+Download `review_artifacts.zip` from Drive, or set only `DOWNLOAD_REAL_REVIEW=True` in the
+export cell. Read the summary/full HTML and resolve human-review cases before considering
+any later experiment; this request does not authorize training.

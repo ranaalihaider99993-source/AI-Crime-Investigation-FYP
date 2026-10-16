@@ -7,10 +7,12 @@ import base64
 import csv
 import html
 import json
+from datetime import datetime, timezone
+from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
 import cv2
 import numpy as np
-from scripts.data import (CLASSES, canonical_clip, class_summary, file_hash,
+from scripts.data import (CLASSES, FIELDS, canonical_clip, class_summary, file_hash,
                           source_id, split_signature, validate_manifest)
 from scripts.dataset_paths import resolve_dataset_root
 
@@ -114,6 +116,98 @@ def _sheet(frames, metadata):
     return base64.b64encode(encoded).decode()
 
 
+def review_summary(report):
+    """Summarize measured flags; every label/incident judgment stays pending."""
+    pairs = []
+    for index,pair in enumerate(report['pairs'],1):
+        left,right = report['clips'][pair['left']],report['clips'][pair['right']]
+        pairs.append(dict(case=f'PAIR-{index:02}',left_source=left['source'],right_source=right['source'],
+                          left_split=left['split'],right_split=right['split'],
+                          kind=pair['kind'],cross_split=pair['cross_split'],
+                          priority='TECHNICAL BLOCKER' if pair['kind']=='exact_file_duplicate' else
+                                   'CROSS-SPLIT INVESTIGATION' if pair['cross_split'] else 'HUMAN INVESTIGATION',
+                          action='Compare both original videos; confirm/correct grouping. Semantic incident identity remains unverified.'))
+    return dict(selected_clips=len(report['clips']),technical_status=report['technical_status'],
+                technical_errors=len(report['errors']),suspicious_pairs=len(pairs),
+                exact_file_duplicate_pairs=sum(p['kind']=='exact_file_duplicate' for p in pairs),
+                uncertain_similarity_pairs=sum(p['kind']!='exact_file_duplicate' for p in pairs),
+                cross_split_flagged_pairs=sum(p['cross_split'] for p in pairs),
+                clips_with_warnings=sum(bool(c['warnings']) for c in report['clips']),
+                label_reviews_pending=len(report['clips']),incident_reviews_pending=len(report['clips']),
+                human_approval='PENDING',training_executed=False,pair_findings=pairs,
+                next_action='Keep both training flags False. Investigate technical failures and suspicious cases, and review ALL selected labels/source identities; no automatic human approval.')
+
+
+def _summary_markdown(report):
+    summary=report['summary']
+    escape=lambda x:str(x).replace('|','/').replace('\n',' ')
+    lines=['# Selected-clip review summary','',f"Scope: {escape(report['scope'])}",'',
+           f"Generated (UTC): {report['generated_at_utc']}",'',
+           f"Technical checks: **{report['technical_status']}**. Human approval: **PENDING**. Training: **NOT EXECUTED**.",'',
+           '| Finding | Count |','| --- | ---: |',
+           f"| Selected clips listed | {summary['selected_clips']} |",
+           f"| Technical errors | {summary['technical_errors']} |",
+           f"| Confirmed byte-duplicate pairs | {summary['exact_file_duplicate_pairs']} |",
+           f"| Uncertain visual-similarity pairs | {summary['uncertain_similarity_pairs']} |",
+           f"| Flagged pairs crossing splits | {summary['cross_split_flagged_pairs']} |",
+           f"| Clips with automatic warnings | {summary['clips_with_warnings']} |",
+           f"| Labels requiring human verification | {summary['label_reviews_pending']} |",
+           f"| Incident/source independence reviews pending | {summary['incident_reviews_pending']} |",'',
+           'Counts describe only these inputs. Zero similarity flags does NOT verify labels or incident independence.','',
+           '## Findings requiring investigation','']
+    lines += [f'- TECHNICAL BLOCKER: {escape(e)}' for e in report['errors']]
+    findings=sorted(summary['pair_findings'],key=lambda p:(p['kind']!='exact_file_duplicate',not p['cross_split'],p['case']))
+    for pair in findings[:10]:
+        lines.append(f"- {pair['case']} / {pair['priority']}: {escape(pair['left_source'])} ({pair['left_split']}) ↔ {escape(pair['right_source'])} ({pair['right_split']}). {pair['action']}")
+    if len(findings)>10:
+        lines.append(f'- {len(findings)-10} additional pairs: see ALL findings in review.html/review.json.')
+    if not findings:
+        lines.append('- No pair crossed the heuristic thresholds. Shared incidents, re-encoded/cropped footage and uncertain crime labels remain possible.')
+    lines += ['', '## Human-review queue (all selected clips)', '',
+              '| Source | Dataset label / split | Automatic warnings | Label review | Incident independence |',
+              '| --- | --- | ---: | --- | --- |']
+    for clip in report['clips']:
+        lines.append(f"| {escape(clip['source'])} | {escape(clip['label'])} / {clip['split']} | {len(clip['warnings'])} | PENDING | PENDING |")
+    lines += ['', 'Inspect warnings/frames in review.html and original videos where context is unclear.',
+              'Dataset class names are not verified crime judgments. Similarity is not incident proof.',
+              'The CSV queue records pending review only; editing it does not approve mappings or enable training.',
+              'Keep SOURCE_MAPPING_REVIEWED=False and RUN_PROTOTYPE_TRAINING=False.', '',
+              f"Manifest: `{escape(report.get('manifest_path','unavailable'))}`",
+              f"Verified dataset root: `{escape(report.get('dataset_root','unavailable'))}`",
+              f"Manifest SHA256: `{report.get('manifest_sha256','unavailable')}`", '']
+    return '\n'.join(lines)
+
+
+def _export_artifacts(output, manifest, report):
+    """Bounded export: report/metadata only, never raw video/checkpoints/credentials."""
+    fields=['source','label','split','canonical_clip','automatic_warnings','label_review','incident_review']
+    with (output/'human_review_queue.csv').open('w',newline='') as f:
+        writer=csv.DictWriter(f,fieldnames=fields);writer.writeheader()
+        for clip in report['clips']:
+            writer.writerow(dict(source=clip['source'],label=clip['label'],split=clip['split'],
+                                 canonical_clip=clip['canonical_clip'],automatic_warnings='; '.join(clip['warnings']),
+                                 label_review='PENDING',incident_review='PENDING'))
+    # Never package a stale snapshot from an earlier successful call.
+    verified_snapshot=False
+    expected=report.get('manifest_sha256')
+    if expected and Path(manifest).is_file() and file_hash(manifest)==expected:
+        (output/'selected_clips.csv').write_bytes(Path(manifest).read_bytes())
+        verified_snapshot=True
+    else:
+        with (output/'selected_clips.csv').open('w',newline='') as f:
+            csv.DictWriter(f,fieldnames=FIELDS+['split']).writeheader()
+    names=['review.html','review.json','review_summary.md','review_cases.csv','human_review_queue.csv','selected_clips.csv']
+    info=dict(scope=report['scope'],generated_at_utc=report['generated_at_utc'],
+              valid_manifest_snapshot=verified_snapshot,source_manifest_sha256=expected,
+              human_approval='PENDING',training_executed=False,
+              note='Report artifacts only. No raw videos, model weights, credentials or synthetic demonstration files are included.',
+              files_sha256={name:file_hash(output/name) for name in names})
+    (output/'export_info.json').write_text(json.dumps(info,indent=2))
+    with ZipFile(output/'review_artifacts.zip','w',compression=ZIP_DEFLATED) as archive:
+        for name in names+['export_info.json']:
+            archive.write(output/name,arcname=name)
+
+
 def _render(report, pictures):
     esc=lambda s:html.escape(str(s),quote=True)
     parts=['<!doctype html><html lang="en"><meta charset="utf-8"><title>Selected clip review</title>',
@@ -152,7 +246,7 @@ def _render(report, pictures):
 def review_selected(manifest, dataset_root, output, samples=SAMPLES, scope='Selected DCSASS clips; semantic labels and incident independence UNVERIFIED'):
     """Write self-contained HTML/JSON/CSV without modifying inputs or any approval."""
     output=Path(output); output.mkdir(parents=True,exist_ok=True)
-    report=dict(scope=scope, technical_status='FAIL',human_review='PENDING',training_executed=False,
+    report=dict(scope=scope, generated_at_utc=datetime.now(timezone.utc).isoformat(), manifest_path=str(Path(manifest).resolve()), technical_status='FAIL',human_review='PENDING',training_executed=False,
                 errors=[],verified_checks=[],clips=[],pairs=[],requested_samples=samples,
                 limitations=['Only the 12 selected clips are compared, not the whole dataset.',
                              'dHash + gray pixel similarity are uncalibrated classical heuristics, not trained crime/incident models.',
@@ -162,6 +256,7 @@ def review_selected(manifest, dataset_root, output, samples=SAMPLES, scope='Sele
     pictures, features={},{}
     try:
         root=resolve_dataset_root(dataset_root)
+        report['dataset_root']=str(root)
         with Path(manifest).open() as f:
             rows=list(csv.DictReader(f))
         validate_manifest(rows,require_splits=True,require_classes=True)
@@ -221,6 +316,8 @@ def review_selected(manifest, dataset_root, output, samples=SAMPLES, scope='Sele
         report['errors'].append(f'{type(exc).__name__}: {exc}')
     report['semantic_status']='UNVERIFIED'
     report['incident_independence']='UNVERIFIED'
+    report['summary']=review_summary(report)
+    (output/'review_summary.md').write_text(_summary_markdown(report))
     (output/'review.json').write_text(json.dumps(report,indent=2))
     (output/'review.html').write_text(_render(report,pictures))
     with (output/'review_cases.csv').open('w',newline='') as f:
@@ -228,6 +325,7 @@ def review_selected(manifest, dataset_root, output, samples=SAMPLES, scope='Sele
         w=csv.DictWriter(f,fieldnames=fields);w.writeheader()
         for clip in report['clips']:
             w.writerow({k:'; '.join(clip['warnings']) if k=='warnings' else clip.get(k,'') for k in fields})
+    _export_artifacts(output, manifest, report)
     return report
 
 
