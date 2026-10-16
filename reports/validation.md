@@ -218,3 +218,36 @@ Output: `MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_prepar
 Download `review_artifacts.zip` from Drive, or set only `DOWNLOAD_REAL_REVIEW=True` in the
 export cell. Read the summary/full HTML and resolve human-review cases before considering
 any later experiment; this request does not authorize training.
+
+## Existing-original playback and bounded package update
+
+Latest complete local suite: **58 tests passed**. Python compilation and whitespace checks
+also pass. New tests use generated temporary videos; quota values are test fixtures, not a
+measurement of the user's Drive space.
+
+- New helpers read the existing saved candidate/preflight only. Regression tests check that
+  candidate bytes remain identical and that the export workflow never invokes the splitter.
+- All 12 HTML5 players embed exact original bytes and show source, dataset class, split and
+  original filename. The eight user-specified low-motion identifiers are matched ignoring
+  `_x264`, and flagged as user-reported rather than semantically verified.
+- Repeated video basenames remain unchanged under split/source subdirectories. A package
+  contains exactly 12 original video members plus five explicit metadata/checklist/player
+  files. Tests compare every archived video byte and SHA-256 with its source.
+- Missing/changed candidate assignments/content, escaped paths, oversized clips/total,
+  inline overflow, stale temporal-selection binding, unknown/insufficient quota and low
+  filesystem space block the corresponding operation. An existing ZIP is preserved.
+- A content change during copying fails integrity checks and removes the incomplete archive.
+- Default execution of the actual new notebook cells is covered with UI rendering stubbed:
+  all 12 players are prepared, export/download opt-ins remain False, both training flags
+  remain False, and no training/package is started by default.
+- Real export requires live Google Drive API storageQuota metadata for the same account as
+  mounted MyDrive, plus output/local filesystem space. It is not inferred from FUSE disk
+  usage. Unknown/non-finite quota blocks export. Authentication/quota/playback on the user's
+  actual Colab runtime were not available or independently verified here.
+
+No actual DCSASS original clips were viewed/copied here, no real Drive package was generated,
+and no human label/incident approval, CNN training or accuracy is claimed. In Colab reopen
+notebook 02, run setup/Drive mounting only, then `original-video-players` directly. Do NOT
+rerun Automatic preparation/Run all for this workflow. Export with `export-original-videos`
+only when requested; preserve the same saved candidate. Destination:
+`MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/original_video_review/original_video_review.zip`.

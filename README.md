@@ -63,6 +63,7 @@ scripts/preprocess.py     # preprocessing CLI
 scripts/classifier.py     # CNN, video sampling, training and evaluation
 scripts/smoke.py          # automatic report, human gate and bounded GPU launch
 scripts/review.py         # temporal visual report and uncertain similarity flags
+scripts/original_review.py # original HTML5 players and bounded 12-video export
 scripts/scenario.py       # GRU encoder-decoder, training and inference
 scripts/evaluate.py       # held-out evaluation CLI
 scripts/common.py         # reproducibility settings
@@ -335,6 +336,65 @@ python -m scripts.review /path/to/candidate_splits.csv /verified/dataset/root /p
 
 The command exits nonzero on technical failure but still writes the report. It never trains,
 loads pretrained weights, calls inference APIs, edits dataset files or changes approval flags.
+
+## Watch/export the 12 ORIGINAL videos (existing candidate only)
+
+For the original-video workflow, **do not Run all or rerun Automatic preparation**.
+That earlier workflow prepares candidates; this workflow must reuse your already saved one.
+Reopen the latest notebook 02 and run only its setup/Drive-mount cell, then the new
+**Play the 12 existing original videos** cell (`original-video-players`). It reads the existing
+`smoke_preparation/validation.json` and its unchanged candidate CSV. It never calls the splitter.
+If resolved Kaggle paths are no longer accessible, stop and restore/rebind the same canonical
+selection; do not create another split just to make playback work.
+
+All 12 originals appear as HTML5 players with class naming assignment, canonical source ID,
+split, original filename and byte size. These clips are embedded from the resolved dataset
+paths, not inaccessible browser file URLs. The eight user-reported low-motion sources
+`burglary041`, `stealing060`, `stealing054`, `stealing002`, `fighting005`, `fighting002`,
+`vandalism019`, and `vandalism043` are highlighted when present (`_x264` is ignored for matching).
+Any listed source absent from the current candidate is reported; no clip is substituted.
+Low motion is a user-reported attention flag, not an inferred crime or label decision.
+
+To create the downloadable original-video package, run **Export originals**
+(`export-original-videos`) with `EXPORT_ORIGINAL_VIDEOS=True`. Leave
+`SOURCE_MAPPING_REVIEWED=False` and `RUN_PROTOTYPE_TRAINING=False`; both new cells explicitly
+keep them False. Set `DOWNLOAD_ORIGINAL_PACKAGE=True` in the same export run if you also want
+an immediate browser download. For a later download-only run, set export False and download
+True, or download the existing ZIP directly from Drive.
+
+Package location:
+
+```text
+MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/original_video_review/original_video_review.zip
+```
+
+The archive contains **exactly 12 unchanged original videos**, preserving basenames under
+`clips/<split>/<source>/`, plus `selected_clips.csv`, `review_metadata.json`,
+`human_checklist.csv`, `README.txt`, and an offline `index.html` with all 12 relative video
+players. Extract the entire ZIP before opening it. No re-encoding, cropping or content
+changes occur; each streamed original is SHA-256 checked and archive CRC verified.
+Class labels, full-video-watched status and incident independence remain **PENDING** in the
+checklist. Editing it does not enable training. Existing ZIPs are never overwritten.
+
+Bounds/checks before export:
+
+- Default maximum: 64 MiB per video, 256 MiB total for the 12, plus at most 1 MiB metadata.
+- Inline Colab embedding additionally caps the total at 128 MiB to bound notebook output.
+  The plan remains available for the ZIP/offline players if inline playback exceeds this.
+- The export cell requests Google Drive metadata authorization if needed. Select the
+  **same account used for the mounted MyDrive**. Actual account storage is read through
+  Drive API `about.storageQuota`; FUSE/local free space is never treated as Drive quota.
+- Available Drive bytes must cover twice the estimated archive size plus a 16 MiB margin
+  for rename/copy behavior. Output filesystem and local Colab cache space are also checked.
+  Unknown/unavailable/non-finite quota or insufficient space blocks export, without fallback.
+- Input paths remain inside the verified dataset root; candidate file/signature, video
+  sizes/hashes and any existing temporal report binding must match. Content changes during
+  export fail and remove the incomplete generated archive.
+
+HTML5 playback depends on the original codec being supported by the browser. If unsupported,
+use a compatible offline player on the packaged original; the utility deliberately does not
+transcode evidence. These outputs are generated in your authorized Colab/Drive runtime;
+local generated-video tests do not establish that your real clips played or were exported.
 
 ## Local CPU smoke tests
 

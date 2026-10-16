@@ -81,9 +81,9 @@ def test_notebook_preparation_keeps_training_disabled(tmp_path):
     # Rendering widgets are not available in this CPU venv. Stub display only;
     # execute the actual preparation, guarded-launch and result code otherwise.
     namespace.update(display=lambda *args: None, Markdown=str, HTML=str, Image=lambda **kwargs: kwargs)
-    for ident in ['automatic-preparation', 'temporal-selected-review', 'export-real-review', 'reviewed-smoke-launch', 'actual-smoke-results']:
+    for ident in ['automatic-preparation', 'temporal-selected-review', 'export-real-review', 'original-video-players', 'export-original-videos', 'reviewed-smoke-launch', 'actual-smoke-results']:
         source = next(c.source for c in book.cells if c.id == ident)
-        source = source.replace('from IPython.display import display, Markdown, Image', '').replace('from IPython.display import HTML', '')
+        source = source.replace('from IPython.display import display, Markdown, Image', '').replace('from IPython.display import HTML', '').replace('from IPython.display import display, HTML', '')
         exec(compile(source, '<notebook-cell>', 'exec'), namespace)
     assert namespace['SOURCE_MAPPING_REVIEWED'] is False
     assert namespace['RUN_PROTOTYPE_TRAINING'] is False
@@ -91,5 +91,9 @@ def test_notebook_preparation_keeps_training_disabled(tmp_path):
     assert (output/'smoke_preparation/candidate_splits.csv').exists()
     assert namespace['SMOKE_RESULT'] is None
     assert namespace['DOWNLOAD_REAL_REVIEW'] is False
+    assert namespace['EXPORT_ORIGINAL_VIDEOS'] is False
+    assert namespace['DOWNLOAD_ORIGINAL_PACKAGE'] is False
+    assert len(namespace['ORIGINAL_PLAN']['clips'])==12
+    assert namespace['ORIGINAL_PACKAGE'] is None
     assert namespace['REAL_REVIEW_BUNDLE'].is_file()
     assert not (output/'classifier').exists()
