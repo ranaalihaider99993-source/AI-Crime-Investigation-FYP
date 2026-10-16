@@ -30,6 +30,6 @@ only demonstrates the synthetic GRU pipeline. Use an adequately sized human-revi
 dataset before evaluating investigative usefulness. Notebook 04 evaluates existing saved
 checkpoints; missing files produce errors rather than invented results.
 
-The source is committed locally; publishing the commit to the existing GitHub repository
-is a separate step before Colab can clone these files. No checkpoints, datasets, videos,
+Commit cdb9147 was subsequently pushed to GitHub main and all four notebook raw URLs
+returned HTTP 200. See colab_access.md for the subsequent interactive-access check. No checkpoints, datasets, videos,
 credentials, or temporary test outputs are committed.

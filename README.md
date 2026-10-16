@@ -25,9 +25,12 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
    the notebook previews only the first 20. Reports contain observed counts, not assumed statistics.
 6. Open `02_Crime_Classification_Training.ipynb`. Confirm class/source mapping and set
    `SOURCE_MAPPING_REVIEWED=True`. Enable `RUN_PROTOTYPE_TRAINING=True` only for the small prototype.
-   Full training is **not approved or executed** in this task.
+   The notebook now limits the first experiment to 3 source clips per class and 2 epochs.
+   It evaluates the held-out sources immediately afterward. Full training requires separate approval.
 7. Run `03_Scenario_GRU_Training.ipynb` for the tiny explicitly synthetic neural pipeline test.
-8. Run `04_Model_Evaluation.ipynb` after checkpoints exist to evaluate held-out data.
+8. Run `04_Model_Evaluation.ipynb` after the CNN checkpoint exists to repeat held-out evaluation;
+   GRU evaluation is optional and disabled by default. Set `DOWNLOAD_CHECKPOINT=True` in the
+   last cell of notebook 02 to download `crime_classifier.pth` for later Django integration.
 
 Run cells from top to bottom. Colab is interactive and Drive mounting requires your action.
 If Drive mounting fails, resolve that error before training; the notebook does not silently

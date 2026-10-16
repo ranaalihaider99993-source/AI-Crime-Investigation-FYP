@@ -74,6 +74,10 @@ def train(manifest,output,config):
     (output/'experiment.json').write_text(json.dumps(metadata,indent=2))
     (output/'split_manifest.csv').write_text(Path(manifest).read_text())
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    metadata['training_device']=str(device)
+    metadata['gpu_name']=torch.cuda.get_device_name(device) if device.type=='cuda' else None
+    (output/'experiment.json').write_text(json.dumps(metadata,indent=2))
+    print('Actual training device:', device, metadata['gpu_name'])
     model=CrimeCNN().to(device); optimizer=torch.optim.Adam(model.parameters(),lr=config['learning_rate'])
     loaders={s:DataLoader(VideoDataset(manifest,s,config['image_size'],config['frames_per_clip']),batch_size=config['batch_size'],shuffle=s=='train',num_workers=0) for s in ['train','val']}
     best=float('inf'); stale=0; history=[]
