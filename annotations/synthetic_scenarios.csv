@@ -1,0 +1,13 @@
+source_id,split,evidence,scenario,provenance
+synthetic01,train,classification burglary observation person near window,entry through the window is possible but unconfirmed .,synthetic
+synthetic02,train,classification stealing observation person carrying bag,a property removal may have occurred but ownership is unknown .,synthetic
+synthetic03,train,classification fighting observation people exchanging blows,a physical confrontation may be occurring .,synthetic
+synthetic04,train,classification vandalism observation person striking wall,property damage is possible and requires verification .,synthetic
+synthetic05,train,classification normal observation people walking,no clear criminal activity is supported by this observation .,synthetic
+synthetic06,train,classification burglary observation broken window,a possible entry point requires further inspection .,synthetic
+synthetic07,train,classification normal observation person waiting,waiting alone does not establish criminal activity .,synthetic
+synthetic08,train,classification stealing observation object moved,an object was moved but intent and ownership remain unknown .,synthetic
+synthetic09,val,classification fighting observation people pushing,a confrontation is possible but context is uncertain .,synthetic
+synthetic10,val,classification vandalism observation damaged door,damage may have occurred but its cause is unconfirmed .,synthetic
+synthetic11,test,classification burglary observation open window,an open window alone does not establish unlawful entry .,synthetic
+synthetic12,test,classification normal observation person standing,no specific criminal conclusion is supported .,synthetic

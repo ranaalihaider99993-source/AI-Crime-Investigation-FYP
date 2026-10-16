@@ -1,0 +1,491 @@
+{
+  "scope": "CPU smoke tests ONLY. CNN uses blank generated videos with arbitrary labels; GRU uses explicitly synthetic pairs. No DCSASS training or real investigation performance measured.",
+  "device": "cpu",
+  "torch": "2.14.1+cpu",
+  "cnn_history": [
+    {
+      "epoch": 1,
+      "train": {
+        "loss": 1.6123708486557007,
+        "accuracy": 0.2,
+        "precision": 0.04,
+        "recall": 0.2,
+        "macro_f1": 0.06666666666666667,
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        ],
+        "per_class": {
+          "Burglary": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Stealing": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Fighting": {
+            "precision": 0.2,
+            "recall": 1.0,
+            "f1-score": 0.3333333333333333,
+            "support": 1.0
+          },
+          "Vandalism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Normal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "accuracy": 0.2,
+          "macro avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          },
+          "weighted avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          }
+        }
+      },
+      "val": {
+        "loss": 1.6117738485336304,
+        "accuracy": 0.2,
+        "precision": 0.04,
+        "recall": 0.2,
+        "macro_f1": 0.06666666666666667,
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        ],
+        "per_class": {
+          "Burglary": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Stealing": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Fighting": {
+            "precision": 0.2,
+            "recall": 1.0,
+            "f1-score": 0.3333333333333333,
+            "support": 1.0
+          },
+          "Vandalism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Normal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "accuracy": 0.2,
+          "macro avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          },
+          "weighted avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          }
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "train": {
+        "loss": 1.6117738485336304,
+        "accuracy": 0.2,
+        "precision": 0.04,
+        "recall": 0.2,
+        "macro_f1": 0.06666666666666667,
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        ],
+        "per_class": {
+          "Burglary": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Stealing": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Fighting": {
+            "precision": 0.2,
+            "recall": 1.0,
+            "f1-score": 0.3333333333333333,
+            "support": 1.0
+          },
+          "Vandalism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Normal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "accuracy": 0.2,
+          "macro avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          },
+          "weighted avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          }
+        }
+      },
+      "val": {
+        "loss": 1.6111996173858643,
+        "accuracy": 0.2,
+        "precision": 0.04,
+        "recall": 0.2,
+        "macro_f1": 0.06666666666666667,
+        "confusion_matrix": [
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        ],
+        "per_class": {
+          "Burglary": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Stealing": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Fighting": {
+            "precision": 0.2,
+            "recall": 1.0,
+            "f1-score": 0.3333333333333333,
+            "support": 1.0
+          },
+          "Vandalism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "Normal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 1.0
+          },
+          "accuracy": 0.2,
+          "macro avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          },
+          "weighted avg": {
+            "precision": 0.04,
+            "recall": 0.2,
+            "f1-score": 0.06666666666666667,
+            "support": 5.0
+          }
+        }
+      }
+    }
+  ],
+  "cnn_test": {
+    "loss": 1.6111996173858643,
+    "accuracy": 0.2,
+    "precision": 0.04,
+    "recall": 0.2,
+    "macro_f1": 0.06666666666666667,
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "per_class": {
+      "Burglary": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Stealing": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Fighting": {
+        "precision": 0.2,
+        "recall": 1.0,
+        "f1-score": 0.3333333333333333,
+        "support": 1.0
+      },
+      "Vandalism": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Normal": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "accuracy": 0.2,
+      "macro avg": {
+        "precision": 0.04,
+        "recall": 0.2,
+        "f1-score": 0.06666666666666667,
+        "support": 5.0
+      },
+      "weighted avg": {
+        "precision": 0.04,
+        "recall": 0.2,
+        "f1-score": 0.06666666666666667,
+        "support": 5.0
+      }
+    }
+  },
+  "gru_history": [
+    {
+      "epoch": 1,
+      "train": {
+        "loss": 4.228619575500488,
+        "teacher_forced_token_accuracy": 0.0,
+        "tokens": 80
+      },
+      "val": {
+        "loss": 4.253243446350098,
+        "teacher_forced_token_accuracy": 0.0,
+        "tokens": 21
+      }
+    },
+    {
+      "epoch": 2,
+      "train": {
+        "loss": 4.200283527374268,
+        "teacher_forced_token_accuracy": 0.0125,
+        "tokens": 80
+      },
+      "val": {
+        "loss": 4.239022254943848,
+        "teacher_forced_token_accuracy": 0.0,
+        "tokens": 21
+      }
+    }
+  ],
+  "gru_test": {
+    "loss": 4.251642227172852,
+    "teacher_forced_token_accuracy": 0.0,
+    "tokens": 19
+  }
+}
