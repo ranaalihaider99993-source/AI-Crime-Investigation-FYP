@@ -29,8 +29,11 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
    saved inspection, automatically prepares a candidate split, and displays a PASS/FAIL
    report and selected-frame review sheet. It does not approve mappings or start training.
 7. Review `smoke_preparation/validation.md`, `source_review.csv`, and `review_sheet.jpg`.
+   The added temporal-review cell then displays `smoke_preparation/temporal_review/review.html`,
+   with up to 12 distinct positions per clip, relative timestamps and highlighted cases.
    Check class assignments, original-source conventions and related incidents across source
-   IDs. If automatic checks fail or the mapping cannot be verified, leave both flags False.
+   IDs. Compare suspicious pairs in the temporal report and inspect original videos if needed.
+   If a technical failure or unresolved semantic/incident concern remains, leave both flags False.
 8. Only after your review, set **both** `SOURCE_MAPPING_REVIEWED=True` and
    `RUN_PROTOTYPE_TRAINING=True` in the launch cell, then run that cell and the result cell.
    The GPU-required launcher permits only **2 epochs / 3 sources per class**, creates fresh
@@ -59,6 +62,7 @@ scripts/dataset_paths.py  # verified KaggleHub roots and hash-checked path rebas
 scripts/preprocess.py     # preprocessing CLI
 scripts/classifier.py     # CNN, video sampling, training and evaluation
 scripts/smoke.py          # automatic report, human gate and bounded GPU launch
+scripts/review.py         # temporal visual report and uncertain similarity flags
 scripts/scenario.py       # GRU encoder-decoder, training and inference
 scripts/evaluate.py       # held-out evaluation CLI
 scripts/common.py         # reproducibility settings
@@ -237,6 +241,59 @@ and inspection artifacts are rechecked before training to bind review to unchang
 Unknown source naming fails automatically rather than assuming independence. The review
 sheet helps visual inspection but cannot certify labels or identify all related incidents.
 Preparation never sets an approval flag, saves trained weights or creates evaluation metrics.
+
+## Temporal review of the 12 selected smoke clips
+
+Notebook 02 adds a report after the existing automatic preparation; working inspection,
+root resolution, source grouping, SHA-256 deduplication and training guards are retained.
+Reopen the latest GitHub notebook 02 and Run all with both flags **False**. No rerun of
+notebook 01 is needed just to add this review if its artifacts still validate.
+
+The report is saved in Drive under
+`AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/temporal_review/`:
+
+- `review.html`: self-contained images, class naming assignments, source IDs, split labels,
+  sample frame positions/times, and linked suspicious pairs. Download/open it in a browser
+  if Drive preview or Colab output truncates the full report. No external scripts are needed.
+- `review.json`: technical checks, sample coverage, SHA-256, uncertain matching evidence,
+  limits, and explicit `human_review=PENDING`, `semantic_status=UNVERIFIED`,
+  `incident_independence=UNVERIFIED`, `training_executed=false`.
+- `review_cases.csv`: per-clip warnings/errors for review.
+
+Up to **12 unique positions** are sampled across each clip's reported frame range, using
+available videos instead of only the original three-frame sheet. Short clips report the
+actual smaller sample count. Unknown-length videos get bounded sampling of at most the
+first 240 decoded frames and a partial-coverage warning. This is not full corruption scanning.
+
+Technical checks validate canonical identities, naming-based class mapping, containment,
+unique selected clips and zero canonical source overlap. Byte-identical files under different
+source IDs are a confirmed content duplicate and make technical review **FAIL**, including
+within one split. The report does not call their crime labels or incident identities verified.
+
+Classical dHash (64-bit) plus grayscale mean absolute error compares temporal samples with
+one-to-one matches, allowing offsets. At least three matches covering half the smaller sample
+set, Hamming distance <=6, grayscale MAE <=12, and texture standard deviation >=12 trigger an
+**uncertain shared-scene** alert. These fixed thresholds are uncalibrated heuristics, not
+probabilities, semantic models or learned embeddings. Shared cameras/static backgrounds can
+cause false positives. Crops, re-encoding, camera differences, other temporal locations and
+related incidents outside these 12 clips can evade detection. Low texture, little motion,
+too few samples and decoding failures are highlighted. No alerts does not prove independence.
+
+**Before approval:** investigate highlighted pairs and watch the original clips where samples
+are inconclusive. Verify source conventions and dataset labels, especially Fighting's small
+source pool. Correct grouping/splits if footage is duplicated or related across holdouts;
+regenerate preparation and this report after any change. A technical PASS never approves the
+mapping. Only an explicit human decision may set the existing review flag. The updated notebook
+launch additionally binds the report's split/file hashes and rejects technical failures.
+
+Standalone generation from an already prepared and path-resolved split:
+
+```bash
+python -m scripts.review /path/to/candidate_splits.csv /verified/dataset/root /path/to/temporal_review
+```
+
+The command exits nonzero on technical failure but still writes the report. It never trains,
+loads pretrained weights, calls inference APIs, edits dataset files or changes approval flags.
 
 ## Local CPU smoke tests
 

@@ -80,10 +80,10 @@ def test_notebook_preparation_keeps_training_disabled(tmp_path):
     # Colab authentication, installation, Drive mounting, or GPU allocation.
     # Rendering widgets are not available in this CPU venv. Stub display only;
     # execute the actual preparation, guarded-launch and result code otherwise.
-    namespace.update(display=lambda *args: None, Markdown=str, Image=lambda **kwargs: kwargs)
-    for ident in ['automatic-preparation', 'reviewed-smoke-launch', 'actual-smoke-results']:
+    namespace.update(display=lambda *args: None, Markdown=str, HTML=str, Image=lambda **kwargs: kwargs)
+    for ident in ['automatic-preparation', 'temporal-selected-review', 'reviewed-smoke-launch', 'actual-smoke-results']:
         source = next(c.source for c in book.cells if c.id == ident)
-        source = source.replace('from IPython.display import display, Markdown, Image', '')
+        source = source.replace('from IPython.display import display, Markdown, Image', '').replace('from IPython.display import HTML', '')
         exec(compile(source, '<notebook-cell>', 'exec'), namespace)
     assert namespace['SOURCE_MAPPING_REVIEWED'] is False
     assert namespace['RUN_PROTOTYPE_TRAINING'] is False

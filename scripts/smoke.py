@@ -219,7 +219,7 @@ def prepare_smoke(data_root, inspection_dir, output, config):
 
 
 def run_reviewed_smoke(report_path, runs_dir, config, source_mapping_reviewed=False,
-                       run_prototype_training=False, require_gpu=True):
+                       run_prototype_training=False, require_gpu=True, temporal_review_path=None):
     """Both user gates + unchanged passing report + GPU required by Colab entrypoint."""
     if not run_prototype_training:
         return None
@@ -235,13 +235,22 @@ def run_reviewed_smoke(report_path, runs_dir, config, source_mapping_reviewed=Fa
     selected = read_csv(report['split_manifest'])
     require(report['selected_clip_sha256'] == {r['canonical_clip']: file_hash(r['path']) for r in selected},
             'Selected video contents changed; rerun preparation and human review')
+    review_hash = None
+    if temporal_review_path is not None:
+        review = json.loads(Path(temporal_review_path).read_text())
+        require(review['technical_status'] == 'PASS', 'Temporal review has technical failures; resolve before training')
+        require(review['canonical_split_signature'] == report['split_signature'] and
+                review['manifest_sha256'] == report['split_file_sha256'], 'Temporal review belongs to a different split; regenerate and review')
+        require({r['canonical_clip']:r['sha256'] for r in review['clips']} == report['selected_clip_sha256'],
+                'Temporal review video hashes differ; regenerate and review')
+        review_hash = file_hash(temporal_review_path)
     if require_gpu:
         require(torch.cuda.is_available(), 'No CUDA GPU allocated: select T4 GPU and reconnect; no CPU training was substituted')
     runs_dir = Path(runs_dir)
     run_dir = runs_dir/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+uuid.uuid4().hex[:8])
     run_dir.mkdir(parents=True, exist_ok=False)
     (run_dir/'review_attestation.json').write_text(json.dumps(dict(source_mapping_reviewed=True,
-        reviewed_report_sha256=file_hash(report_path), canonical_split_signature=report['split_signature']), indent=2))
+        reviewed_report_sha256=file_hash(report_path), temporal_review_sha256=review_hash, canonical_split_signature=report['split_signature']), indent=2))
     # This call creates fresh random weights. No checkpoint is loaded for training.
     history = train(report['split_manifest'], run_dir, config)
     metrics = evaluate(run_dir/'split_manifest.csv', run_dir/'crime_classifier.pth', run_dir/'test_metrics.json')

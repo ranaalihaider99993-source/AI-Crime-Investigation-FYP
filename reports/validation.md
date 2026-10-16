@@ -151,3 +151,37 @@ For a location-only failure, reopen updated notebook 02, restart its session and
 with both flags False. Notebook 01 is unnecessary when saved identities/copy counts and
 content hashes match; rerun it only when the explicit report says evidence/content differs
 or cannot be verified. Hash verification of relocated copies may take time.
+
+## Temporal selected-clip review update
+
+Complete local suite: **42 tests passed**. Existing preprocessing/root resolution and model
+smoke tests remain intact. New tests use generated temporary MJPEG videos, not DCSASS.
+
+- A 12-clip temporal review samples 12 distinct positions through each synthetic 24-frame
+  sequence, shows relative timestamps and renders self-contained HTML/JSON/CSV reports.
+- Similar synthetic sequences written with different container timing are flagged as
+  **uncertain** scene matches; the technical checks pass without human approval.
+- Byte-identical videos under distinct source IDs cause technical FAIL. Source overlap,
+  incorrect class assignment, outside-root paths and unreadable video fail safely.
+- One-frame/low-texture clips report limited evidence instead of inventing temporal coverage.
+- Human review and semantic/incident independence remain PENDING/UNVERIFIED, training remains
+  unexecuted, and the notebook defaults leave both flags False.
+- Guarded launch rejects temporal reports for another split or with technical failures.
+  Reported clip SHA-256 values must also match the preflight's selected video hashes.
+- Tests exercise the actual new notebook review cell with rendering stubbed locally, together
+  with existing preparation and disabled launch/result cells. No Colab execution is implied.
+
+A fresh browser attempt again failed with `net::ERR_TUNNEL_CONNECTION_FAILED`. The user's
+successful T4 automatic validation is user-reported; the actual selected clips/Drive report
+were inaccessible here. No actual DCSASS temporal findings, human approval, GPU training,
+accuracy or new real checkpoint are claimed.
+
+A synthetic demonstration report was generated outside the checkout at
+`/workspace/artifacts/dcsass-review-demo/review.html`. It contains random generated videos
+and one deliberately repeated visual sequence. Its findings are **not** DCSASS findings.
+For the real report, reopen notebook 02 from GitHub, run all with both flags False, and read
+`smoke_preparation/temporal_review/review.html` in Drive. Resolve technical failures and
+investigate uncertain cases before explicit human approval; only then is the existing
+12-clip/two-epoch GPU smoke the next permitted training experiment.
+
+The self-contained synthetic HTML was rendered locally with Chromium: 12 cards and 12 embedded contact sheets were present, with the synthetic-only scope visible. This offline rendering check is not evidence of Colab access.
