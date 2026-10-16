@@ -43,7 +43,11 @@ def video(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*'MJPG'), 5, (16, 16))
     assert writer.isOpened()
-    writer.write(np.zeros((16, 16, 3), np.uint8))
+    # Unique per logical source/clip; mirror copies are still copied byte-for-byte.
+    import hashlib
+    key = f'{path.parent.name}/{path.name}'.encode()
+    seed = int.from_bytes(hashlib.sha256(key).digest()[:4], 'big')
+    writer.write(np.random.default_rng(seed).integers(0, 256, (16, 16, 3), dtype=np.uint8))
     writer.release()
 
 

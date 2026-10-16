@@ -72,14 +72,22 @@ def test_notebook_preparation_keeps_training_disabled(tmp_path):
     make_mirrors(tmp_path)
     output = tmp_path/'notebook-output'
     output.mkdir()
+    import shutil
+    shutil.copytree(tmp_path/'report', output/'inspection')
     book = nbformat.read('notebooks/02_Crime_Classification_Training.ipynb', as_version=4)
     namespace = {'DATA': tmp_path/'dataset', 'OUTPUT': output}
     # Exercise the actual notebook preparation and guarded execution cells, not
     # Colab authentication, installation, Drive mounting, or GPU allocation.
-    for index in [3, 5, 6, 7]:
-        exec(compile(book.cells[index].source, '<notebook-cell>', 'exec'), namespace)
+    # Rendering widgets are not available in this CPU venv. Stub display only;
+    # execute the actual preparation, guarded-launch and result code otherwise.
+    namespace.update(display=lambda *args: None, Markdown=str, Image=lambda **kwargs: kwargs)
+    for ident in ['automatic-preparation', 'reviewed-smoke-launch', 'actual-smoke-results']:
+        source = next(c.source for c in book.cells if c.id == ident)
+        source = source.replace('from IPython.display import display, Markdown, Image', '')
+        exec(compile(source, '<notebook-cell>', 'exec'), namespace)
     assert namespace['SOURCE_MAPPING_REVIEWED'] is False
     assert namespace['RUN_PROTOTYPE_TRAINING'] is False
-    assert namespace['report']['unique_video_clips'] == 26
-    assert not (output/'classifier_splits.csv').exists()
-    assert not (output/'classifier/crime_classifier.pth').exists()
+    assert namespace['AUTOMATIC_REPORT']['automatic_status'] == 'PASS'
+    assert (output/'smoke_preparation/candidate_splits.csv').exists()
+    assert namespace['SMOKE_RESULT'] is None
+    assert not (output/'classifier').exists()

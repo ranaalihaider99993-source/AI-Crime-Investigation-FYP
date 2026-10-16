@@ -23,15 +23,25 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
 5. Review the generated `inspection.json` and `manifest.csv` in
    `MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/inspection`. Inspect **all** candidate annotation files;
    the notebook previews only the first 20. Reports contain observed counts, not assumed statistics.
-6. Open `02_Crime_Classification_Training.ipynb`. Confirm class/source mapping and set
-   `SOURCE_MAPPING_REVIEWED=True` to generate the split report while leaving training disabled.
-   Read `classifier_splits.report.json`; then enable `RUN_PROTOTYPE_TRAINING=True` only for the small prototype.
-   The notebook now limits the first experiment to 3 source clips per class and 2 epochs.
-   It evaluates the held-out sources immediately afterward. Full training requires separate approval.
-7. Run `03_Scenario_GRU_Training.ipynb` for the tiny explicitly synthetic neural pipeline test.
-8. Run `04_Model_Evaluation.ipynb` after the CNN checkpoint exists to repeat held-out evaluation;
-   GRU evaluation is optional and disabled by default. Set `DOWNLOAD_CHECKPOINT=True` in the
-   last cell of notebook 02 to download `crime_classifier.pth` for later Django integration.
+6. If notebook 01 already produced the schema-v2 files, reopen the latest
+   [notebook 02 in Colab](https://colab.research.google.com/github/ranaalihaider99993-source/AI-Crime-Investigation-FYP/blob/main/notebooks/02_Crime_Classification_Training.ipynb),
+   choose a T4 runtime, and **Run all with both flags False**. Notebook 02 now reuses the
+   saved inspection, automatically prepares a candidate split, and displays a PASS/FAIL
+   report and selected-frame review sheet. It does not approve mappings or start training.
+7. Review `smoke_preparation/validation.md`, `source_review.csv`, and `review_sheet.jpg`.
+   Check class assignments, original-source conventions and related incidents across source
+   IDs. If automatic checks fail or the mapping cannot be verified, leave both flags False.
+8. Only after your review, set **both** `SOURCE_MAPPING_REVIEWED=True` and
+   `RUN_PROTOTYPE_TRAINING=True` in the launch cell, then run that cell and the result cell.
+   The GPU-required launcher permits only **2 epochs / 3 sources per class**, creates fresh
+   random weights, and evaluates held-out sources. It rejects changed reports/data, missing
+   GPUs and expanded training configurations. This 12-clip experiment checks execution only.
+9. Actual checkpoint paths, accuracy, macro F1, confusion matrix and per-class results are
+   printed after successful execution. Set `DOWNLOAD_CHECKPOINT=True` in the result cell
+   to download `crime_classifier.pth` for later Django integration. Notebook 04 can repeat
+   evaluation using the latest successfully completed smoke run.
+10. Notebook 03 is an **optional, separate synthetic GRU pipeline test**. It is unnecessary
+    for CNN training/evaluation and provides no real scenario-generation evidence.
 
 Run cells from top to bottom. Colab is interactive and Drive mounting requires your action.
 If Drive mounting fails, resolve that error before training; the notebook does not silently
@@ -47,6 +57,7 @@ notebooks/04_Model_Evaluation.ipynb
 scripts/data.py           # real-file inspection and grouped splitting
 scripts/preprocess.py     # preprocessing CLI
 scripts/classifier.py     # CNN, video sampling, training and evaluation
+scripts/smoke.py          # automatic report, human gate and bounded GPU launch
 scripts/scenario.py       # GRU encoder-decoder, training and inference
 scripts/evaluate.py       # held-out evaluation CLI
 scripts/common.py         # reproducibility settings
@@ -84,7 +95,8 @@ Among copies, it retains the shortest relative path, then case-insensitive/exact
 order. SHA-256 verifies every excluded copy; conflicting bytes stop inspection and write
 `duplicate_conflict.json`. Hashing scans duplicate files fully and can take time; decoding
 runs only for the retained copies. This is path-identity deduplication, not detection of
-similar scenes stored under unrelated names. `excluded_duplicates.csv` preserves each
+similar scenes stored under unrelated names. The new selected-clip preflight also rejects
+byte-identical videos across different source IDs/splits, but cannot detect re-encoded duplicates. `excluded_duplicates.csv` preserves each
 excluded path, selected path, canonical key, hash, and reason. No dataset files are deleted.
 
 Original `.mp4` parent directory basenames identify source videos; flat
@@ -101,7 +113,8 @@ Each class needs at least three independent sources; otherwise it fails. The spl
 assigns `max(1, floor(0.2*n))` sources each to validation/test and the rest to training.
 Frames are decoded after splitting; test data are not used for early stopping.
 
-`classifier_splits.report.json` records available readable clips/sources, exclusions, selected
+`candidate_splits.report.json` in notebook 02 (or `<split-file>.report.json` from the CLI)
+records available readable clips/sources, exclusions, selected
 counts **per class and per split**, and the actual source-intersection lists (all must be
 empty). The notebook smoke uses 3 sources per class: **1 train / 1 validation / 1 test**,
 12 clips total. If 8 sources per class are selected, counts are **6 / 1 / 1**. A held-out
@@ -148,10 +161,16 @@ a separate annotated detection dataset is required; do not fabricate boxes. No d
 
 ## Checkpoint persistence
 
-Colab writes best weights and epoch history under
-`MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/{classifier,scenario}`. Weights persist when Drive is
-mounted; processes and the current epoch do not. Training reruns start from scratch and
-can overwrite experiment outputs: use a new `OUTPUT` folder for a new experiment.
+The notebook 02 launcher writes each reviewed run under
+`MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/classifier/runs/<timestamp>-<id>/`.
+The best checkpoint, epoch history, exact split snapshot, experiment metadata, review
+attestation and actual test metrics are retained there. A `latest_completed.json` pointer
+is updated **only after training and evaluation both succeed**. Interrupted/failed runs
+cannot become the latest completed experiment. Earlier successful runs are not overwritten
+or displayed as a new result after a failed invocation. Training always starts from scratch.
+The legacy CLI trainer still writes directly to its specified output folder; use a new
+folder to preserve previous CLI experiments. GRU outputs remain in the separate `scenario/` folder.
+Drive retains files after disconnect; processes and the in-progress epoch do not persist.
 Optimizer-state continuation is not implemented. Saved models can be evaluated or used
 for inference after reconnecting without retraining. Redownload DCSASS when needed; if its
 cache path changes, regenerate/review the manifest with the same seed and **verify identical
@@ -159,6 +178,23 @@ source/test membership** before evaluation. Do not silently reassign the test se
 manifests and checkpoints from the old duplicated/five-class artifacts. In a reused Colab
 runtime, notebooks 01/02 fast-forward a clean checkout and evict stale project module
 imports; local checkout edits cause an error instead of being overwritten.
+
+## What the automatic report does and does not verify
+
+`smoke_preparation/validation.json` and `validation.md` separate **automatic PASS/FAIL**,
+**human mapping review PENDING**, and **no training executed**. Preparation checks physical
+paths against canonical IDs, unique clips, the four-class mapping and source counts,
+saved duplicate-audit consistency, at least three readable recognized sources per class,
+zero canonical source overlap, all sampled frame decoding and byte-identical leakage
+among the selected clips. Very short clips reuse decoded frames for repeated sample indices.
+
+The existing notebook 01 duplicate SHA-256 records are checked for consistency with counts,
+current paths and file sizes; the full dataset is not rehashed. If its contents changed,
+rerun notebook 01. Only the 12 selected clips are hashed again; their hashes, candidate split
+and inspection artifacts are rechecked before training to bind review to unchanged inputs.
+Unknown source naming fails automatically rather than assuming independence. The review
+sheet helps visual inspection but cannot certify labels or identify all related incidents.
+Preparation never sets an approval flag, saves trained weights or creates evaluation metrics.
 
 ## Local CPU smoke tests
 

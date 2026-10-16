@@ -20,3 +20,10 @@ smoke result has only one held-out source per class; it tests the pipeline, not 
 Full-data training must wait for a successful real-data smoke experiment and user approval.
 
 Schema v2 supersedes that default: four classes and 12 clips, still with launch/review flags disabled. See validation.md for current regression results.
+
+A subsequent browser access attempt for notebook 02 again failed with
+`net::ERR_TUNNEL_CONNECTION_FAILED`. Browser automation is installed, but no authenticated
+Colab session, Drive access, GPU allocation, or real-data execution was available to the
+agent. The user reports running inspection and default notebook preparation on a T4 runtime;
+those runs were not performed or observed by the agent. Notebook 02 now automatically
+prepares a candidate/report without approval and offers a separately guarded two-epoch launch.

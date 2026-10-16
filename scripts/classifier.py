@@ -32,13 +32,19 @@ class VideoDataset(Dataset):
     def __len__(self): return len(self.rows)
     def __getitem__(self,i):
         r=self.rows[i]; cap=cv2.VideoCapture(r['path']); n=int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        images=[]
+        images=[]; decoded={}
         try:
             for pos in np.linspace(0,max(0,n-1),self.frames).astype(int):
+                # Very short clips repeat sample indices. Decode each position once;
+                # repeated seeks to frame zero can fail with some OpenCV backends.
+                if int(pos) in decoded:
+                    images.append(decoded[int(pos)])
+                    continue
                 cap.set(cv2.CAP_PROP_POS_FRAMES,int(pos)); ok,frame=cap.read()
                 if not ok: raise RuntimeError(f'Unreadable sampled frame in {r["path"]}')
                 frame=cv2.cvtColor(cv2.resize(frame,(self.size,self.size)),cv2.COLOR_BGR2RGB)
-                images.append(torch.from_numpy(frame.copy()).permute(2,0,1).float()/255)
+                tensor=torch.from_numpy(frame.copy()).permute(2,0,1).float()/255
+                decoded[int(pos)]=tensor; images.append(tensor)
         finally: cap.release()
         return torch.stack(images),CLASSES.index(r['label'])
 

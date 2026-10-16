@@ -69,3 +69,43 @@ Drive authorization, or real-data accuracy/F1/confusion matrix was measured here
 Checkpoints now record a hash of canonical clip/source/label/split membership; evaluation
 rejects changed membership even if each new split is individually disjoint. Physical cache
 path relocation alone does not change that hash, but missing physical files still fail.
+
+## Subsequent automatic-report and reviewed-smoke launcher update
+
+The latest local run has **22 tests passed**. The prior 11-test result above describes
+schema-v2 preprocessing; this update adds coverage for the report/launcher workflow.
+
+- Notebook 02 now reuses notebook 01 artifacts instead of repeating whole-dataset inspection.
+  It creates an unapproved candidate split while **both flags remain False**.
+- The report clearly separates automatic checks, pending human review, hardware availability
+  and no training execution. It includes current readable source counts, per-class split
+  counts, source overlap, a mapped-source review CSV and selected-frame review sheet.
+- Automatic checks bind physical paths to canonical clip/source IDs, validate saved count
+  and duplicate-audit consistency, reject insufficient/unrecognized source names, decode
+  actual selected frames and reject byte-identical selected videos across splits.
+  Full-dataset duplicate hashes are recorded inspection evidence, not rehashed by preparation.
+- Before a reviewed launch, inspection hashes, split/config and selected video bytes are
+  checked again. Missing GPU, pending human approval, failed validation, changed inputs,
+  and configuration expansion beyond two epochs/three sources per class all block training.
+- Local tests exercised fresh two-epoch CNN training and actual evaluation **on generated
+  temporary videos only**, using an explicit CPU test override. Unique run directories
+  preserve prior checkpoints; a simulated disconnection cannot create a completed pointer.
+- The same selected-frame preflight exposed repeated-seek failures on one-frame clips.
+  The loader now caches decoded sample positions so repeated frame indices work correctly.
+- Notebook 02 default execution was tested without its Colab/UI/authentication cells.
+  Rendering was stubbed; actual preparation and guarded launch/result cells ran. Neither
+  flag became True, no model trained, and a candidate/report was created as intended.
+- A fresh actual Chromium/Playwright navigation to notebook 02's Colab URL failed with
+  `net::ERR_TUNNEL_CONNECTION_FAILED`. No Colab runtime or Google Drive session was accessible.
+
+The user reports successfully running notebook 01 and notebook 02 on a T4 runtime, with
+both launch/review flags still False. These are user-reported executions. Their Drive
+artifacts have **not been read or independently validated from this cloud machine**.
+No real-data GPU training, Drive checkpoint, real accuracy, macro F1 or per-class results
+were produced in this update. The new report must be run on those actual files in Colab.
+
+Current next action supersedes steps 3–4 above: reopen the latest notebook 02 from GitHub,
+Run all with flags False, review the automatically generated report and source sheet,
+then enable both flags only after human review and run the launch and result cells.
+Actual successful runs are stored under `classifier/runs/<timestamp>-<id>/`; notebook 04
+now reads the latest completed run pointer. Full training remains blocked by launcher bounds.
