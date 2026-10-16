@@ -7,7 +7,7 @@
 - No interactive Colab runtime, Google account session, GPU allocation, or Drive authorization was established.
 - No DCSASS download, real-data training, held-out real-data metrics, or real trained checkpoint was produced here. Synthetic CPU smoke results from the earlier task remain clearly labeled.
 
-Follow-up fixes: notebook 02 now defaults to a 15-source-clip / two-epoch real-data smoke
+Historical follow-up fixes before schema v2: notebook 02 defaulted to a 15-source-clip / two-epoch real-data smoke
 experiment (three independent original source videos per class), prints actual training
 device, evaluates held-out sources, and offers an explicit checkpoint download. Notebook 04
 no longer requires a GRU checkpoint for CNN evaluation. Six local tests passed after these
@@ -18,3 +18,5 @@ data before reviewing source IDs and enabling notebook 02's two training/review 
 If no GPU is allocated, stop before training when GPU execution is required. The first
 smoke result has only one held-out source per class; it tests the pipeline, not generalization.
 Full-data training must wait for a successful real-data smoke experiment and user approval.
+
+Schema v2 supersedes that default: four classes and 12 clips, still with launch/review flags disabled. See validation.md for current regression results.

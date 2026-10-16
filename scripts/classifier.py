@@ -10,7 +10,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from scripts.common import seed_all, experiment_metadata
-from scripts.data import CLASSES
+from scripts.data import CLASSES, validate_manifest, split_signature
 
 
 class CrimeCNN(nn.Module):
@@ -18,18 +18,14 @@ class CrimeCNN(nn.Module):
         super().__init__()
         self.net=nn.Sequential(nn.Conv2d(3,16,3,padding=1),nn.ReLU(),nn.MaxPool2d(2),
                                nn.Conv2d(16,32,3,padding=1),nn.ReLU(),nn.MaxPool2d(2),
-                               nn.Conv2d(32,64,3,padding=1),nn.ReLU(),nn.AdaptiveAvgPool2d(1),nn.Flatten(),nn.Linear(64,5))
+                               nn.Conv2d(32,64,3,padding=1),nn.ReLU(),nn.AdaptiveAvgPool2d(1),nn.Flatten(),nn.Linear(64,len(CLASSES)))
     def forward(self,x): return self.net(x)
 
 
 class VideoDataset(Dataset):
     def __init__(self,manifest,split,size=64,frames=3):
         with open(manifest) as f: rows=list(csv.DictReader(f))
-        owners={}
-        for r in rows:
-            if r['source'] in owners and owners[r['source']] != r['split']:
-                raise ValueError('Source leakage in split manifest')
-            owners[r['source']]=r['split']
+        validate_manifest(rows, require_splits=True, require_classes=True)
         self.rows=[r for r in rows if r['split']==split]
         if not self.rows: raise ValueError(f'Empty {split} split')
         self.size,self.frames=size,frames
@@ -48,10 +44,10 @@ class VideoDataset(Dataset):
 
 
 def metrics(y,pred):
-    p,r,f,_=precision_recall_fscore_support(y,pred,labels=list(range(5)),average='macro',zero_division=0)
+    p,r,f,_=precision_recall_fscore_support(y,pred,labels=list(range(len(CLASSES))),average='macro',zero_division=0)
     return dict(accuracy=accuracy_score(y,pred),precision=p,recall=r,macro_f1=f,
-                confusion_matrix=confusion_matrix(y,pred,labels=list(range(5))).tolist(),
-                per_class=classification_report(y,pred,labels=list(range(5)),target_names=CLASSES,output_dict=True,zero_division=0))
+                confusion_matrix=confusion_matrix(y,pred,labels=list(range(len(CLASSES)))).tolist(),
+                per_class=classification_report(y,pred,labels=list(range(len(CLASSES))),target_names=CLASSES,output_dict=True,zero_division=0))
 
 
 def epoch(model,loader,device,optimizer=None):
@@ -59,7 +55,7 @@ def epoch(model,loader,device,optimizer=None):
     with torch.set_grad_enabled(optimizer is not None):
         for x,y in loader:
             x,y=x.to(device),y.to(device); b,t,c,h,w=x.shape
-            logits=model(x.reshape(b*t,c,h,w)).reshape(b,t,5).mean(1)
+            logits=model(x.reshape(b*t,c,h,w)).reshape(b,t,len(CLASSES)).mean(1)
             loss=nn.functional.cross_entropy(logits,y)
             if optimizer is not None:
                 optimizer.zero_grad(); loss.backward(); optimizer.step()
@@ -71,6 +67,7 @@ def train(manifest,output,config):
     if config['epochs'] < 1 or config['patience'] < 1: raise ValueError('Positive epochs and patience required')
     seed_all(config['seed']); output=Path(output); output.mkdir(parents=True,exist_ok=True)
     metadata=experiment_metadata(manifest,config['seed'])
+    metadata['canonical_split_signature']=split_signature(manifest)
     (output/'experiment.json').write_text(json.dumps(metadata,indent=2))
     (output/'split_manifest.csv').write_text(Path(manifest).read_text())
     device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -95,6 +92,10 @@ def train(manifest,output,config):
 
 def evaluate(manifest,checkpoint,output):
     saved=torch.load(checkpoint,map_location='cpu',weights_only=True); config=saved['config']
+    if saved['classes'] != CLASSES:
+        raise ValueError('Checkpoint class mapping differs; regenerate a four-class checkpoint from random initialization')
+    if saved.get('metadata', {}).get('canonical_split_signature') != split_signature(manifest):
+        raise ValueError('Canonical split membership differs from training checkpoint; do not reassign held-out sources')
     model=CrimeCNN(); model.load_state_dict(saved['state_dict'])
     result=epoch(model,DataLoader(VideoDataset(manifest,'test',config['image_size'],config['frames_per_clip']),batch_size=config['batch_size']),'cpu')
     Path(output).write_text(json.dumps(result,indent=2)); return result

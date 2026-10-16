@@ -487,5 +487,6 @@
     "loss": 4.251642227172852,
     "teacher_forced_token_accuracy": 0.0,
     "tokens": 19
-  }
+  },
+  "historical_note": "Historical five-class synthetic CPU run before schema-v2 canonicalization; not a result for the current four-class pipeline or real DCSASS."
 }

@@ -21,10 +21,11 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
    If Kaggle requires authentication, use KaggleHub's supported login or secure Colab secret handling.
    Never paste credentials into committed cells.
 5. Review the generated `inspection.json` and `manifest.csv` in
-   `MyDrive/AI-Crime-Investigation-FYP/inspection`. Inspect **all** candidate annotation files;
+   `MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/inspection`. Inspect **all** candidate annotation files;
    the notebook previews only the first 20. Reports contain observed counts, not assumed statistics.
 6. Open `02_Crime_Classification_Training.ipynb`. Confirm class/source mapping and set
-   `SOURCE_MAPPING_REVIEWED=True`. Enable `RUN_PROTOTYPE_TRAINING=True` only for the small prototype.
+   `SOURCE_MAPPING_REVIEWED=True` to generate the split report while leaving training disabled.
+   Read `classifier_splits.report.json`; then enable `RUN_PROTOTYPE_TRAINING=True` only for the small prototype.
    The notebook now limits the first experiment to 3 source clips per class and 2 epochs.
    It evaluates the held-out sources immediately afterward. Full training requires separate approval.
 7. Run `03_Scenario_GRU_Training.ipynb` for the tiny explicitly synthetic neural pipeline test.
@@ -68,23 +69,67 @@ frame of each clip. This is not a full corruption scan: training raises an error
 sampled frame is unreadable. Counts and actual annotation availability remain unknown until
 notebook 01 executes against the dataset. Unmapped classes are excluded from classifier training.
 
-Initial classes: **Burglary, Stealing, Fighting, Vandalism, Normal**. The three-layer CNN
+Current prototype classes: **Burglary, Stealing, Fighting, Vandalism**.
+`Normal` and all other categories are unmapped and excluded from training for now.
+The four-class CNN rejects checkpoints with the old five-class mapping. The three-layer CNN
 starts with random weights and averages logits over three uniformly sampled RGB frames
 (resized to 64×64 and scaled to [0,1]). It is an intentionally limited clip classifier,
 not a temporal detector; category labels may include normal frames within crime clips.
 
-Original `.mp4` parent directory names group segments. Flat `*_x264_N.mp4` names group by
-`*_x264`. Unknown naming conventions require manually corrected source IDs. Filename grouping
-does not prove source independence: review related videos and near duplicates before training.
-The prototype uses one random representative clip per source, equal source counts per class,
-up to 30 each. Each class needs at least three independent sources; otherwise it fails.
-Groups split approximately 60/20/20 (train/validation/test), deterministically with seed 42.
-Frames are decoded **after** splitting; the test split is never used for early stopping.
+Inspection strips repeated leading `DCSASS Dataset` wrappers case-insensitively and
+lowercases the remaining relative clip key. Thus `DCSASS Dataset/...` and
+`dcsass dataset/DCSASS Dataset/...` identify the same clip. It preserves category and
+source directory components: equal segment basenames from different sources are distinct.
+Among copies, it retains the shortest relative path, then case-insensitive/exact lexical
+order. SHA-256 verifies every excluded copy; conflicting bytes stop inspection and write
+`duplicate_conflict.json`. Hashing scans duplicate files fully and can take time; decoding
+runs only for the retained copies. This is path-identity deduplication, not detection of
+similar scenes stored under unrelated names. `excluded_duplicates.csv` preserves each
+excluded path, selected path, canonical key, hash, and reason. No dataset files are deleted.
+
+Original `.mp4` parent directory basenames identify source videos; flat
+`*_x264_N.mp4` names group by `*_x264`. IDs are canonical lowercase, independent of dataset
+root and category directories. Conflicting source labels, duplicate canonical/physical
+clips, missing files, invalid class counts, legacy manifests, and cross-split source leakage
+fail explicitly. Unknown naming conventions or near-duplicate incidents still need review.
+Regenerate **all** old manifests and splits: schema v2 requires `canonical_clip`.
+
+The prototype uses one seeded representative clip per original source, equal source counts
+per class. Sources and clip candidates are sorted before seeded selection, so manifest row
+order cannot change the split. Selection is capped at the least available readable class.
+Each class needs at least three independent sources; otherwise it fails. The split policy
+assigns `max(1, floor(0.2*n))` sources each to validation/test and the rest to training.
+Frames are decoded after splitting; test data are not used for early stopping.
+
+`classifier_splits.report.json` records available readable clips/sources, exclusions, selected
+counts **per class and per split**, and the actual source-intersection lists (all must be
+empty). The notebook smoke uses 3 sources per class: **1 train / 1 validation / 1 test**,
+12 clips total. If 8 sources per class are selected, counts are **6 / 1 / 1**. A held-out
+Fighting clip from only one source cannot establish reliable performance. Enlarging other
+classes does not create additional independent Fighting sources.
+
+### User-reported DCSASS inspection (not independently measured here)
+
+The user found **33,278 raw rows, 16,639 unique clips, and 520 canonical original sources**.
+The duplicate dataset-root copies explain the doubled rows.
+
+| Mapped category | Unique clips | Original sources |
+| --- | ---: | ---: |
+| Burglary | 1,504 | 47 |
+| Stealing | 2,048 | 64 |
+| Fighting | 256 | 8 |
+| Vandalism | 928 | 29 |
+
+The remaining **11,903 unique clips are unmapped**. These observations are not hard-coded
+assertions about future Kaggle versions. Regenerated `inspection.json` reports the actual
+current raw/unique counts, all-source counts, mapped counts, unmapped source/clip totals and
+unmapped category-name candidates separately. No real-data accuracy is claimed.
 
 Training uses Adam, cross entropy, validation-loss early stopping, and best-checkpoint saving
 as `crime_classifier.pth`. Epoch histories include real loss, accuracy, macro precision,
 recall/F1, confusion matrices and per-class reports. The config and class order are saved
-with the checkpoint. Record the dataset version, reviewed manifest and package versions
+with the checkpoint. A canonical split-membership hash prevents evaluation against changed
+clip/source/label/split assignments, even if physical cache paths change. Record the dataset version, reviewed manifest and package versions
 for each experiment. Exact reproducibility across GPU/platform/library versions is not guaranteed.
 
 ## Neural scenarios and detection feasibility
@@ -104,13 +149,16 @@ a separate annotated detection dataset is required; do not fabricate boxes. No d
 ## Checkpoint persistence
 
 Colab writes best weights and epoch history under
-`MyDrive/AI-Crime-Investigation-FYP/{classifier,scenario}`. Weights persist when Drive is
+`MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/{classifier,scenario}`. Weights persist when Drive is
 mounted; processes and the current epoch do not. Training reruns start from scratch and
 can overwrite experiment outputs: use a new `OUTPUT` folder for a new experiment.
 Optimizer-state continuation is not implemented. Saved models can be evaluated or used
 for inference after reconnecting without retraining. Redownload DCSASS when needed; if its
 cache path changes, regenerate/review the manifest with the same seed and **verify identical
-source/test membership** before evaluation. Do not silently reassign the test set.
+source/test membership** before evaluation. Do not silently reassign the test set. The new Drive subfolder isolates corrected
+manifests and checkpoints from the old duplicated/five-class artifacts. In a reused Colab
+runtime, notebooks 01/02 fast-forward a clean checkout and evict stale project module
+imports; local checkout edits cause an error instead of being overwritten.
 
 ## Local CPU smoke tests
 
@@ -132,7 +180,7 @@ CLI examples, after manually reviewing a real inspection manifest:
 
 ```bash
 python -m scripts.preprocess inspect /path/to/dataset artifacts/inspection
-python -m scripts.preprocess split artifacts/inspection/manifest.csv artifacts/splits.csv --per-class 30
+python -m scripts.preprocess split artifacts/inspection/manifest.csv artifacts/splits.csv --per-class 3
 python -m scripts.classifier artifacts/splits.csv --output artifacts/classifier
 python -m scripts.evaluate cnn artifacts/splits.csv artifacts/classifier/crime_classifier.pth artifacts/test.json
 python -m scripts.evaluate gru annotations/synthetic_scenarios.csv artifacts/scenario/scenario_gru.pth artifacts/gru-test.json

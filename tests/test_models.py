@@ -11,10 +11,10 @@ from tests.test_data import test_inspection_and_split as make_test_videos
 
 def test_forward_and_update():
     torch.set_num_threads(1)
-    cnn=CrimeCNN(); x=torch.rand(5,2,3,16,16); y=torch.arange(5)
+    cnn=CrimeCNN(); x=torch.rand(4,2,3,16,16); y=torch.arange(4)
     before=cnn.net[-1].weight.detach().clone()
     result=epoch(cnn,DataLoader(TensorDataset(x,y),batch_size=5),'cpu',torch.optim.Adam(cnn.parameters()))
-    assert result['loss']>0 and len(result['confusion_matrix'])==5
+    assert result['loss']>0 and len(result['confusion_matrix'])==4
     assert not torch.equal(before,cnn.net[-1].weight)
     gru=ScenarioGRU(10)
     src=torch.tensor([[1,4,2,0],[1,5,6,2]])
@@ -28,7 +28,22 @@ def test_training_and_checkpoints(tmp_path):
     config=dict(seed=42,image_size=16,frames_per_clip=1,batch_size=5,learning_rate=.001,epochs=2,patience=1)
     history=train_cnn(tmp_path/'split.csv',tmp_path/'cnn',config)
     result=eval_cnn(tmp_path/'split.csv',tmp_path/'cnn/crime_classifier.pth',tmp_path/'cnn/test.json')
-    assert len(history)==2 and sum(sum(row) for row in result['confusion_matrix'])==5
+    assert len(history)==2 and sum(sum(row) for row in result['confusion_matrix'])==4
+    import csv
+    from scripts.data import write_csv
+    with (tmp_path/'split.csv').open() as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        row['split'] = {'train':'val', 'val':'train', 'test':'test'}[row['split']]
+    write_csv(tmp_path/'changed.csv', rows, list(rows[0]))
+    with pytest.raises(ValueError, match='membership differs'):
+        eval_cnn(tmp_path/'changed.csv', tmp_path/'cnn/crime_classifier.pth', tmp_path/'should-not-exist.json')
+    saved = torch.load(tmp_path/'cnn/crime_classifier.pth', weights_only=True)
+    saved['classes'] = saved['classes'] + ['Normal']
+    torch.save(saved, tmp_path/'legacy.pth')
+    with pytest.raises(ValueError, match='class mapping differs'):
+        eval_cnn(tmp_path/'split.csv', tmp_path/'legacy.pth', tmp_path/'should-not-exist.json')
+
     pairs='annotations/synthetic_scenarios.csv'
     history=train(pairs,tmp_path/'gru',epochs=2)
     assert len(history)==2
@@ -50,3 +65,21 @@ def test_pair_leakage(tmp_path):
     path=tmp_path/'bad.csv'
     path.write_text('source_id,split,evidence,scenario,provenance\na,train,one,two,synthetic\na,val,three,four,synthetic\n')
     with pytest.raises(ValueError,match='leakage'): load_pairs(path)
+
+
+def test_notebook_preparation_keeps_training_disabled(tmp_path):
+    from tests.test_data import test_duplicate_dataset_roots as make_mirrors
+    make_mirrors(tmp_path)
+    output = tmp_path/'notebook-output'
+    output.mkdir()
+    book = nbformat.read('notebooks/02_Crime_Classification_Training.ipynb', as_version=4)
+    namespace = {'DATA': tmp_path/'dataset', 'OUTPUT': output}
+    # Exercise the actual notebook preparation and guarded execution cells, not
+    # Colab authentication, installation, Drive mounting, or GPU allocation.
+    for index in [3, 5, 6, 7]:
+        exec(compile(book.cells[index].source, '<notebook-cell>', 'exec'), namespace)
+    assert namespace['SOURCE_MAPPING_REVIEWED'] is False
+    assert namespace['RUN_PROTOTYPE_TRAINING'] is False
+    assert namespace['report']['unique_video_clips'] == 26
+    assert not (output/'classifier_splits.csv').exists()
+    assert not (output/'classifier/crime_classifier.pth').exists()
