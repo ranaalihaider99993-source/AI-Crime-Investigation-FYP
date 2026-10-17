@@ -603,3 +603,51 @@ checklists or decisions, and do not invalidate otherwise matching human snapshot
 
 Real DCSASS analysis is performed only when you run the launcher in your authorized
 Colab/Drive session. Local generated-video tests are not real dataset findings.
+
+### Preview and approve saved decisions → human checklist
+
+Run the existing first-cell **Launch OpenCV-assisted saved review** in Notebook 02.
+At the dashboard's **Synchronize saved human decisions to checklist** panel:
+
+1. Save any current video-form edits first. Sync reads saved CSVs, not unsaved controls.
+2. Click **Preview latest saved decisions**. Review the exact-source field diff,
+   before/proposed counts, and remaining Pending/Uncertain sources with reasons.
+3. Only if the diff is correct, tick **I reviewed this preview and explicitly
+   approve these checklist changes**, then click **Apply approved checklist changes**.
+4. Wait for the checklist, backup and refreshed report paths. Rerun the launcher
+   before further video-form saves, since old callbacks bind to the prior checklist.
+
+Preview is read-only. Each proposed label/watched/independence value is copied
+from an explicit saved human decision, never from motion, filenames, hashes or
+similarity. Pending and Uncertain stay as recorded unless the saved human answer
+explicitly differs and you approve that exact change. Confirmed is not a training
+approval. Neither training flag is changed by synchronization.
+
+The latest decision in the **selected context folder** is chosen by its recorded
+timezone-aware save timestamp, not mutable Drive file timestamps. Equal latest
+timestamps, missing CSV/provenance, duplicate/missing/nonexact source IDs, changed
+split identities, unknown options and changed context/evidence are rejected.
+Different review folders are not merged. Check the printed folder or use the
+existing explicit folder override if you have multiple saved reviews.
+
+Existing `notes` and other checklist columns are retained. Saved reviewer names
+and attributed notes are appended without removing earlier entries; repeated sync
+of the same snapshot is a no-op. Prior decision files/provenance and all previous
+Drive reports remain untouched. Approved writes create a unique
+`sync-<UTC>-<id>/human_checklist.backup.<UTC>.csv` containing the original bytes,
+`sync_audit.json`, and `post_sync_report.json`. The refreshed report lists per-source
+answers, Pending/Uncertain reasons and Rejected cases; overall training approval
+remains PENDING. An approved-sync audit permits resuming older decision snapshots
+against the intentionally updated checklist without rewriting their provenance.
+
+If you manually added checklist notes after saving decisions and the launcher
+stops on its stale-input guard, run the optional **Preview and approve checklist
+synchronization** cell (`preview-approve-checklist-sync`) after launcher setup/Drive
+mounting. It allows checklist-only edits into a NEW explicit preview while keeping
+candidate/context/evidence checks strict. It preserves those newer notes. Changes
+since preview, newer decisions, concurrent syncs or a modified preview require a
+fresh preview and approval. If validation/reporting fails after our own write, the
+original checklist is restored when its bytes are still ours; the backup remains.
+Do not remove a stale sync lock blindly after a runtime crash—inspect backups and
+the current checklist first. This workflow requires your authorized live Colab;
+local tests do not imply access to your Drive or application to your checklist.

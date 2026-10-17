@@ -107,7 +107,8 @@ def consolidate_review(context_directory):
                          pair_findings=json.dumps(findings),review_notes=notes,watched_all=h.get('watched_all','PENDING'),
                          selected_label_visible=label_status,incident_independence=h.get('incident_independence','PENDING'),
                          reviewer=h.get('reviewer',''),human_approval='PENDING'))
-    return dict(rows=rows,pairs=pairs,observation_056=observation,inputs=inputs,
+    from scripts.checklist_sync import checklist_status
+    return dict(rows=rows,pairs=pairs,observation_056=observation,inputs=inputs,checklist_status=checklist_status(list(human.values())),
                 canonical_split_signature=saved['canonical_split_signature'],
                 technical_checks='PASS (identity checks only): candidate/context identities, file SHA-256, checklist identities and source-disjoint split assignments',
                 technical_status='BLOCKED' if any(p['kind'] in {'EXACT_BYTES','exact_file_duplicate'} and p['cross_split'] for p in pairs) or temporal_status.startswith('Existing temporal utility: FAIL') else 'IDENTITY CHECKS PASS; HUMAN REVIEW PENDING',
@@ -139,6 +140,7 @@ def write_dashboard(context_directory, interactive=False, resume=False, analyze=
              '<p>'+escape(report['technical_status'])+'</p><p>'+escape(report['technical_checks'])+'</p><p>'+escape(report['limitations'])+'</p>',
              '<p>'+escape(report['temporal_evidence'])+'</p>',
              '<p>Both training flags remain False. Use Notebook 02 source-context players to watch the original videos. This dashboard contains metadata, not video copies.</p>',
+             '<h2>Current checklist status (human answers, not approval)</h2><pre>'+escape(json.dumps(report['checklist_status'],indent=2))+'</pre>',
              '<h2>User observation: source 056</h2><pre>'+escape(json.dumps(report['observation_056'],indent=2))+'</pre>',
              '<h2>Pair findings (not verified incidents)</h2><pre>'+escape(json.dumps(report['pairs'],indent=2))+'</pre>',
              '<p>Edit human_checklist.csv in the parent context folder, then rerun the dashboard cell. Previous dashboards and checklist notes are preserved.</p>']
@@ -160,6 +162,8 @@ def write_dashboard(context_directory, interactive=False, resume=False, analyze=
             from scripts.review_launcher import resume_decisions
             initial,restored_from=resume_decisions(context_directory,report)
         interface=render_review_interface(report,plan,callback,initial,restored_from)
+        from scripts.checklist_sync import render_sync_controls
+        interface+=render_sync_controls(context_directory)
         # Keep detailed metadata below the form, collapsed for efficient video review.
         start=page.index('<body>')+len('<body>')
         page=page[:start]+interface+'<details><summary>Technical evidence and consolidated metadata</summary>'+page[start:].replace('</body>', '</details></body>')

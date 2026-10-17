@@ -91,8 +91,8 @@ def test_interactive_dashboard_callback_end_to_end(selected,tmp_path,monkeypatch
     monkeypatch.setitem(sys.modules,'IPython',ipython)
     monkeypatch.setitem(sys.modules,'IPython.display',display)
     output=write_dashboard(directory,interactive=True)
-    assert len(registered)==1
-    name,callback=next(iter(registered.items()))
+    assert len(registered)==2
+    name,callback=next((name,cb) for name,cb in registered.items() if name.startswith('crimescope.review.'))
     page=(output/'review_dashboard.html').read_text()
     assert name in page and page.count('<video controls')==12
     assert '<details><summary>Technical evidence' in page

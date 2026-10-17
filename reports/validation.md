@@ -367,3 +367,32 @@ Validation for this change: **88 pytest tests passed**. A local Chromium fixture
 also verified embedded contact sheets/original players, preserved explicit human
 answers, live summary edits and a simulated save receipt. No actual Colab runtime,
 Google Drive access or real DCSASS analysis was performed in this workspace.
+
+### Explicit saved-decision checklist synchronization
+
+A new dashboard panel provides read-only preview and separately approved apply.
+The latest receipt is selected by timezone-aware saved_at_utc, with ambiguous ties
+rejected. Exact source IDs, source/class/split/canonical clip identities, option
+values and dataset/context/evidence provenance remain required. Checklist-only
+edits can be reconciled in a preview without discarding newer notes; other changed
+identities/evidence remain blocked. Proposed changes are shown field by field and
+must be approved with a separate checkbox/button bound to the preview token.
+
+Before writing, apply revalidates the preview, latest CSV/provenance and checklist
+hashes under an exclusive sync lock. It writes/verifies a timestamped byte-exact
+backup and replaces the checklist through a temporary file. A post-sync consolidated
+report recalculates human answer counts and lists unresolved sources/reasons. An
+audit binds the approved decision file and original provenance to the updated
+checklist hash; resuming after this known transition does not rewrite decision
+files or loosen the default stale-input guard. A validation/report failure restores
+our own checklist bytes where safe and retains the backup. This is not a guarantee
+against unrelated concurrent manual writes or Google Drive service failures.
+
+Validation: **104 pytest tests passed**. Coverage includes read-only previews,
+explicit approval, exact source matching, unknown/missing/duplicate identities,
+newer-decision/stale-preview rejection, note/history retention, timestamped backups,
+idempotence, updated status reasons, rollback, approved-sync resumption and Colab
+callback token/replay checks. A local Chromium fixture confirmed the visible diff,
+disabled apply before explicit approval and backup/status receipt using a simulated
+callback. No actual Drive checklist was accessed or synchronized in this workspace.
+Neither training flag is changed, and no CNN training was started.

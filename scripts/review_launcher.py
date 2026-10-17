@@ -29,18 +29,19 @@ def choose_context(output, explicit=None):
     return max(folders,key=activity).parent
 
 
-def resume_decisions(directory, report):
+def resume_decisions(directory, report, *, allow_checklist_edits=False):
     """Restore explicit saved answers only; no inference from metadata/checklists."""
     directory=Path(directory)
-    receipts=sorted(directory.glob('decisions-*/provenance.json'),key=lambda p:(p.stat().st_mtime,str(p)),reverse=True)
-    if not receipts:
+    from scripts.checklist_sync import latest_saved_decision, approved_sync_matches
+    latest=latest_saved_decision(directory)
+    if latest is None:
         return {},None
-    receipt=receipts[0]
-    provenance=json.loads(receipt.read_text())
-    require(provenance['inputs']==report['inputs'] and provenance['canonical_split_signature']==report['canonical_split_signature'],
+    path,receipt,provenance=latest
+    checklist_only_edit=allow_checklist_edits and {k:v for k,v in provenance['inputs'].items() if k!='checklist_sha256'}=={k:v for k,v in report['inputs'].items() if k!='checklist_sha256'}
+    require(provenance['canonical_split_signature']==report['canonical_split_signature'] and
+            (provenance['inputs']==report['inputs'] or checklist_only_edit or approved_sync_matches(directory,path,provenance,report)),
             'Latest saved human decisions refer to changed review inputs. All files are preserved; reconcile the snapshots before resuming. No decisions were silently discarded.')
-    files=list(receipt.parent.glob('review_decisions*.csv'))
-    require(len(files)==1, 'Saved decisions CSV is missing or ambiguous; keep the files and recover the correct saved snapshot')
+    files=[path]
     rows=read_csv(files[0])
     expected={r['source']:r for r in report['rows']}
     require(len(rows)==12 and len({r['source'] for r in rows})==12 and {r['source'] for r in rows}==set(expected),'Saved decisions sources differ')
