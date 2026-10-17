@@ -396,3 +396,34 @@ callback token/replay checks. A local Chromium fixture confirmed the visible dif
 disabled apply before explicit approval and backup/status receipt using a simulated
 callback. No actual Drive checklist was accessed or synchronized in this workspace.
 Neither training flag is changed, and no CNN training was started.
+
+### Narrow correction for vandalism019_x264
+
+The dedicated Notebook 02 correction cell performs a read-only preview and requires
+an explicit checkbox/action before applying. It targets the exact source only,
+changes Confirmed to Uncertain (or retains an existing Uncertain), preserves watched
+as recorded, requires independence already Pending, and appends the supplied
+user-reported note without removing old notes. It does not decide authorization
+or infer semantic crime/incident truth. Both training flags remain unchanged.
+
+The CSV patcher replaces one parsed record rather than regenerating all rows.
+All non-target bytes, header order and legacy schema are preserved. An original
+byte-exact timestamped backup and audit accompany the patch. A new decision version
+patches that same source while retaining every non-target record and all historical
+files; otherwise resuming/synchronizing old Confirmed decisions could undo the
+correction. Candidate/context identities and latest saved decisions are rechecked
+before writing/publication; clock conflicts stop instead of publishing an older
+correction. Failures restore only our own checklist bytes and remove only an
+unpublished new decision version, retaining the original backup.
+
+Tests cover multiline/quoted raw CSV preservation, exact source matching, approval,
+watched Confirmed/Pending/Uncertain retention, unchanged other decisions/notes,
+backup/idempotence, newer state conflicts, stale previews, rollback, clock conflicts,
+legacy notes columns, callback approval/replay guards, and resumption/future sync
+without re-confirming this label. These use generated-video/local data fixtures;
+no actual Drive checklist or semantic video content was reviewed here.
+
+Validation: **113 pytest tests passed**. A local Chromium fixture also checked the
+exact-source preview, preserved watched/Pending independence display, disabled
+apply until separate approval, and a simulated backup receipt. No actual Colab
+or Google Drive checklist was accessed or modified by these local checks.

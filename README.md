@@ -651,3 +651,41 @@ original checklist is restored when its bytes are still ours; the backup remains
 Do not remove a stale sync lock blindly after a runtime crash—inspect backups and
 the current checklist first. This workflow requires your authorized live Colab;
 local tests do not imply access to your Drive or application to your checklist.
+
+### Correct the vandalism019_x264 label without changing other reviews
+
+Open the latest Notebook 02. Run the first launcher cell for the code update and
+Drive mount, then run **Correct vandalism019_x264 only — preview, then explicit
+approval** (`correct-vandalism019-review`). Check the printed context folder;
+set the launcher's `REVIEW_CONTEXT_FOLDER` if you need another existing review.
+Do not rerun preparation, splitting or blanket checklist synchronization for this
+single-source correction. If the launcher stops after setup because of a stale
+checklist, the dedicated correction cell can still preview checklist-only edits.
+
+Click **Preview source correction**. Verify the exact source, proposed Uncertain
+label, unchanged watched value and Pending incident independence, plus the
+checklist/decision note changes. Tick **I explicitly approve only this source
+correction**, then click **Apply approved source correction**. Wait for the backup,
+new decision version and audit paths; rerun the launcher before further form saves.
+
+The supplied user observation is appended, with attribution, preserving old notes:
+
+> A person is visibly writing on a wall, but authorization is unknown. The footage
+> does not conclusively establish vandalism, so the label remains uncertain.
+
+Only this exact source's CSV record is patched. All other records and header bytes
+remain byte-for-byte unchanged, including quoting and embedded newlines. Existing
+watched status is never promoted or reset. Independence must already be Pending;
+a conflicting newer state or a non-Confirmed/non-Uncertain label stops for review.
+The workflow does not certify whether the writing was authorized.
+
+A `correction-<UTC>-<id>/` folder contains the timestamped original checklist backup,
+`correction_audit.json` and `post_correction_report.json`. A new timestamped saved
+human-decision CSV patches only the same target record, so the launcher or a future
+sync cannot restore its obsolete Confirmed label. Every previous decision version
+remains untouched; all non-target decision records are byte-identical. No checklist
+schema is regenerated; old checklists without `review_notes` retain their schema
+and use their existing `notes` column. Repeating an already applied correction is
+a no-op. Stale previews, missing/ambiguous source IDs or changed inputs are rejected.
+Neither training flag changes and no training starts. The code prepares a Colab
+workflow; it does not mean your actual Drive files were modified from this workspace.
