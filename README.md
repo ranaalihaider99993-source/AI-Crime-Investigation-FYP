@@ -8,7 +8,43 @@ and Scenario Generation System.” Frontend, live camera, object-detector traini
 multimodal fusion, blockchain, and investigation reports are future work.
 There are no pretrained weights, external AI inference calls, or fabricated accuracy results.
 
-## Start in Google Colab
+## Resume an existing review in one Colab cell
+
+Open [Notebook 02](https://colab.research.google.com/github/ranaalihaider99993-source/AI-Crime-Investigation-FYP/blob/main/notebooks/02_Crime_Classification_Training.ipynb)
+and run its **first code cell: Launch saved review dashboard**
+(`launch-saved-review-dashboard`). Authorize Drive when prompted, review the
+videos, then click **Save review decisions to Google Drive** and wait for the
+saved path. CPU is sufficient. Do not Run all or run any other setup/preparation
+cell for this existing-review workflow.
+
+The launcher mounts Drive, safely fast-forwards the clean Git checkout to main,
+installs dependencies, and loads existing review artifacts. It prefers a folder
+with human annotations/saved decisions over a newer blank review and prints its
+selection. Set `REVIEW_CONTEXT_FOLDER` only if you need a particular existing
+folder. It never downloads a dataset, inspects data, prepares/resplits candidates,
+or starts training. A dirty/diverged checkout stops without resetting local work.
+
+Previously saved explicit human decisions and notes are restored after identity
+checks. New controls remain Pending; metadata and heuristics cannot confirm them.
+A live summary lists source IDs by selected-clip label decision (Pending,
+Confirmed, Uncertain, Rejected), plus watched/independence counts. Restored
+answers are attributed to the prior human submission, not new automatic review.
+If saved inputs changed, the launcher stops rather than discarding annotations.
+
+Every save uses a new `decisions-<id>/review_decisions_<UTC>_<id>.csv` plus provenance
+inside the printed Drive context-review folder. Original checklists and earlier
+versions are preserved. Save before disconnecting or rerunning; unsaved browser
+edits are not durable. Both training flags remain False regardless of decisions.
+
+If Kaggle files disappeared in a new session, the launcher reports recovery
+instructions: locate the recorded `dataset_root`/validation paths in the existing
+metadata, restore the same dataset version at those paths, then rerun this cell.
+It does not silently use a different root, substitute videos or regenerate a
+candidate. Files must pass the existing path, canonical-identity and SHA-256 checks.
+
+## Initial dataset/training preparation in Google Colab
+
+The steps below are for initial preparation, not resuming an existing review.
 
 1. Ensure this commit is pushed to the existing GitHub repository (a local commit alone is not visible to Colab).
 2. Go to **https://colab.research.google.com/**, click **File → Open notebook → GitHub**,

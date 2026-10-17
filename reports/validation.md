@@ -309,3 +309,28 @@ simulated save receipt, callback errors and missing-Colab handling. The Python
 registered-callback integration was tested with a local Colab API stub. No real
 Colab runtime or Drive callback was used in these checks, and no video-content
 understanding or human review is claimed.
+
+### One-cell existing-review launcher
+
+The first code cell in Notebook 02 now mounts Drive, updates a clean Git checkout,
+installs dependencies and opens an existing review. No inspection, preparation,
+splitting, dataset download or training is called. Missing dataset paths raise
+recovery instructions instead of selecting/rebasing new files. Review selection
+prefers saved human activity over a newer blank folder; explicit override is
+supported and the selected folder is printed. Dirty/diverged checkouts are not reset.
+
+Explicit human decision snapshots (including prior fixed-filename CSVs) can be
+resumed only when identities and provenance match. Input changes stop rather than
+silently dropping saved answers. Unreviewed values remain Pending. The live summary
+lists source IDs per label decision and counts watched/independence answers. Saving
+uses unique timestamped CSV filenames, keeps prior versions/checklists intact and
+leaves both training flags False. Regression coverage includes resume, annotated
+folder selection, stale input rejection, recovery without any preparation/split/
+training calls, and notebook launcher placement/guards. Tests use generated videos;
+no actual Colab or Drive access is implied.
+
+Validation: **82 pytest tests passed**, including compatibility with prior
+`review_decisions.csv` snapshots. A local Chromium fixture exercised restored
+explicit answers, source/status summaries, live edits, unsaved-change notices and
+a simulated versioned save receipt. This used generated video fixtures and a
+simulated Colab callback, with no access to the user's Google Colab or Drive.

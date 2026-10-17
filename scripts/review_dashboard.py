@@ -116,7 +116,7 @@ def consolidate_review(context_directory):
                 limitations='This dashboard reads metadata, hashes and saved heuristic findings; it has not watched or understood crime content. No semantic video-analysis method is implemented. All labels and incident independence require human verification. Context is not training data.')
 
 
-def write_dashboard(context_directory, interactive=False):
+def write_dashboard(context_directory, interactive=False, resume=False):
     report = consolidate_review(context_directory)
     output = Path(context_directory)/('dashboard-'+uuid.uuid4().hex[:12])
     output.mkdir(exist_ok=False)
@@ -147,7 +147,11 @@ def write_dashboard(context_directory, interactive=False):
         from scripts.review_interface import render_review_interface, register_drive_callback
         plan=context_plan(json.loads((Path(context_directory)/'context_metadata.json').read_text())['validation_path'])
         callback=register_drive_callback(context_directory,report)
-        interface=render_review_interface(report,plan,callback)
+        initial,restored_from={},None
+        if resume:
+            from scripts.review_launcher import resume_decisions
+            initial,restored_from=resume_decisions(context_directory,report)
+        interface=render_review_interface(report,plan,callback,initial,restored_from)
         # Keep detailed metadata below the form, collapsed for efficient video review.
         start=page.index('<body>')+len('<body>')
         page=page[:start]+interface+'<details><summary>Technical evidence and consolidated metadata</summary>'+page[start:].replace('</body>', '</details></body>')

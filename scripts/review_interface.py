@@ -36,7 +36,7 @@ def save_review_decisions(context_directory, snapshot, decisions):
                          source_mapping_reviewed=False,run_prototype_training=False))
     output=Path(context_directory)/('decisions-'+uuid.uuid4().hex)
     output.mkdir(exist_ok=False)
-    path=output/'review_decisions.csv'
+    path=output/('review_decisions_'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'_'+uuid.uuid4().hex[:8]+'.csv')
     with path.open('x',newline='') as f:
         writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader()
         for row in rows:
@@ -48,19 +48,24 @@ def save_review_decisions(context_directory, snapshot, decisions):
     return dict(saved_csv=str(path),message='Saved human decisions. Original checklist unchanged. Both training flags remain False.')
 
 
-def render_review_interface(report, plan, callback_name=None):
+def render_review_interface(report, plan, callback_name=None, initial=None, restored_from=None):
     """Embedded original videos plus HTML controls. No playback-based auto-confirmation."""
     esc=lambda value:html.escape(str(value),quote=True)
     uid='review-'+uuid.uuid4().hex
     rows={r['source']:r for r in report['rows']}
+    initial=initial or {}
     parts=[f'<div id="{uid}"><h2>Watch and record human decisions</h2>',
-        '<p>Controls start Pending. Confirmed means you affirm the stated claim; Rejected means you disagree; Uncertain means unresolved. '
+        '<p>Controls start Pending unless restored from an explicitly saved human submission. Restoring answers does not grant approval. Confirmed means you affirm the stated claim; Rejected means you disagree; Uncertain means unresolved. '
         'For watched, affirm only after watching ALL available videos in that source group. For incident independence, compare against ALL selected sources. '
         'These answers never enable training. Notes include attributed prior observations, not verified ground truth.</p>',
         '<p>Save decisions to Drive using the button below. Save before rerunning the cell or leaving this runtime. '
         'If a video codec will not play, leave watched Pending/Uncertain and use your exported originals with a compatible player.</p>']
+    if restored_from:
+        parts.append('<p>Restored explicit human answers from: <code>'+esc(restored_from)+'</code></p>')
+    parts.append('<div data-summary role="status"></div>')
     for group in plan['groups']:
         row=rows[group['source']]
+        answer=initial.get(group['source'],{})
         low_motion=any(c.get('reported_low_motion') for c in group['videos']) or any(s in row['flags'].lower() for s in ['little change','low motion','static view'])
         priority=group['label']=='Fighting' or (group['label']=='Vandalism' and low_motion)
         parts.append(f'<section data-review-source="{esc(group["source"])}" style="border:3px solid {"#b03000" if priority else "#aaa"};padding:12px;margin:16px 0">')
@@ -70,13 +75,29 @@ def render_review_interface(report, plan, callback_name=None):
         # The existing player checks containment and content hashes immediately before embedding.
         parts.extend(context_players(dict(plan,groups=[group])))
         for field,label in [('label_visible','Crime label visible in SELECTED clip itself'),('videos_watched','All available videos in this source group watched'),('incident_independence','Incident independent of the OTHER selected sources')]:
-            parts.append(f'<label style="display:block;margin:8px">{esc(label)} <select data-field="{field}" aria-label="{esc(label)}">'+''.join(f'<option>{v}</option>' for v in OPTIONS)+'</select></label>')
-        parts.append('<label>Reviewer <input data-field="reviewer" value="'+esc(row['reviewer'])+'"></label>')
-        parts.append('<label style="display:block">Review notes / related source IDs <textarea data-field="review_notes" rows="4" style="width:95%">'+esc(row['review_notes'])+'</textarea></label></section>')
+            parts.append(f'<label style="display:block;margin:8px">{esc(label)} <select data-field="{field}" aria-label="{esc(label)}">'+''.join(f'<option'+(' selected' if answer.get(field,'Pending')==v and v!='Pending' else '')+f'>{v}</option>' for v in OPTIONS)+'</select></label>')
+        parts.append('<label>Reviewer <input data-field="reviewer" value="'+esc(answer.get('reviewer',row['reviewer']))+'"></label>')
+        parts.append('<label style="display:block">Review notes / related source IDs <textarea data-field="review_notes" rows="4" style="width:95%">'+esc(answer.get('review_notes',row['review_notes']))+'</textarea></label></section>')
     parts.append('<button type="button" data-save>Save review decisions to Google Drive</button><p role="status" data-status>Not saved in this session.</p></div>')
     # Only generated identifiers reach JS; all reviewer text is escaped HTML and read via .value.
     parts.append('<script>(function(){const root=document.getElementById('+json.dumps(uid)+');const callback='+json.dumps(callback_name)+';'+r'''
 const button=root.querySelector('[data-save]'),status=root.querySelector('[data-status]');
+const sections=Array.from(root.querySelectorAll('[data-review-source]'));
+function summary(){
+ const holder=root.querySelector('[data-summary]');holder.replaceChildren();
+ const heading=document.createElement('h3');heading.textContent='Selected-clip label decisions (human answers, not training approval)';holder.append(heading);
+ for(const option of ['Pending','Confirmed','Uncertain','Rejected']){
+  const sources=sections.filter(s=>s.querySelector('[data-field="label_visible"]').value===option).map(s=>s.dataset.reviewSource);
+  const line=document.createElement('p');line.textContent=option+' ('+sources.length+'): '+(sources.join(', ')||'none');holder.append(line);
+ }
+ for(const field of ['videos_watched','incident_independence']){
+  const counts=['Pending','Confirmed','Uncertain','Rejected'].map(option=>option+': '+sections.filter(s=>s.querySelector('[data-field="'+field+'"]').value===option).length);
+  const line=document.createElement('p');line.textContent=field+': '+counts.join(' | ');holder.append(line);
+ }
+}
+root.addEventListener('change',event=>{summary();status.textContent='Unsaved changes. Click Save review decisions to Google Drive.';});
+root.addEventListener('input',()=>{status.textContent='Unsaved changes. Click Save review decisions to Google Drive.';});
+summary();
 button.addEventListener('click',async()=>{
   if(!callback || !window.google?.colab?.kernel?.invokeFunction){
     status.textContent='Drive save unavailable here. Run the dashboard cell in your authorized Colab runtime; keep this form open.';return;
