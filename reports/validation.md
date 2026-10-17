@@ -427,3 +427,40 @@ Validation: **113 pytest tests passed**. A local Chromium fixture also checked t
 exact-source preview, preserved watched/Pending independence display, disabled
 apply until separate approval, and a simulated backup receipt. No actual Colab
 or Google Drive checklist was accessed or modified by these local checks.
+
+### Fresh Colab saved-review dataset relocation
+
+Root cause: saved-review context loading called `context_plan` directly with the
+historical `/kaggle/input/dcsass-dataset` root, before the existing inspection
+resolver could rebind files. Kaggle runtime absolute paths are not Colab paths.
+The new review adapter locates the pinned original validation/inspection/candidate
+artifacts, detects known local dataset packages, and reuses strict inspection
+relocation verification. All canonical identities, physical copy counts and saved
+SHA-256 evidence must match. Source assignments/context roles and selected/context
+content identities must match the saved review exactly. Temporary path-only views
+provide current files to playback/analysis; original Drive artifacts/provenance
+hashes and every human file remain unchanged. A missing or invalid dataset cannot
+trigger splitting, inspection, preparation, label reset or training.
+
+The default Notebook 02 launcher explicitly targets `review-bd132d7b024a`. The new
+recovery cell accepts a supplied full original backup or downloads a known exact
+Kaggle version for verification. An unversioned historical mount does not reveal
+a version; unknown versions stop with manual instructions instead of choosing
+latest. Missing original manifest/inspection artifacts require their saved backups,
+not regenerating the review. Both training flags remain False.
+
+Regression fixtures use the exact historical `/kaggle/input/dcsass-dataset` string,
+a fresh Colab-style cache, duplicate wrappers, saved temporal review, original
+human annotations and an actually applied local vandalism019 correction. They
+verify auto-discovery, launcher behavior without preparation, full canonical/hash
+relocation, invalid/extra/missing/escaping files, unknown-version refusal, explicit
+version download verification (mocked), moved Drive artifact paths, and dashboard
+analysis against the verified runtime root. All original saved files are compared
+byte-for-byte after relocation and the corrected human answer must resume Uncertain.
+These are generated-video fixtures, not execution against the user's Colab/Drive.
+
+Validation: **125 pytest tests passed**, including historical-path containment and
+end-to-end dashboard/OpenCV evidence against a relocated fixture root. Python
+compilation and diff whitespace checks passed. Actual Google Colab, Google Drive
+and the real DCSASS package were not accessed; real-data verification happens when
+the user runs the updated launcher/recovery cell against the saved artifacts.

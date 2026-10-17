@@ -5,7 +5,7 @@ import json
 import re
 import uuid
 from pathlib import Path
-from scripts.context_review import context_plan
+from scripts.review_paths import ensure_review_dataset, temporal_location
 from scripts.data import file_hash
 from scripts.smoke import read_csv, require
 
@@ -25,10 +25,8 @@ def consolidate_review(context_directory):
     metadata = directory/'context_metadata.json'
     checklist = directory/'human_checklist.csv'
     saved = json.loads(metadata.read_text())
-    current = context_plan(saved['validation_path'])
-    for key in ['canonical_split_signature','manifest_sha256','dataset_root','groups','total_video_bytes']:
-        require(saved[key] == current[key], 'Saved context differs from verified candidate/context: '+key)
-    groups = {g['source']:g for g in saved['groups']}
+    current = ensure_review_dataset(directory)
+    groups = {g['source']:g for g in current['groups']}
     require(len(groups)==12, 'Exactly 12 unique review sources required')
     human = read_csv(checklist)
     require(len(human)==12 and {r['source'] for r in human}==set(groups), 'Checklist sources missing, duplicated, or unexpected')
@@ -50,7 +48,7 @@ def consolidate_review(context_directory):
                 pairs.append(dict(left_source=left['source'], right_source=right['source'], kind='EXACT_BYTES',
                                   cross_split=left['split']!=right['split'], provenance='SHA-256 of verified context/selected files',
                                   detail=str(matches)))
-    temporal_path = Path(saved['validation_path']).parent/'temporal_review'/'review.json'
+    temporal_path = temporal_location(directory)
     temporal_status = 'NOT AVAILABLE; no visual similarity or motion analysis performed by this dashboard'
     inputs = dict(context_metadata_sha256=file_hash(metadata), checklist_sha256=file_hash(checklist))
     if temporal_path.exists():
@@ -110,6 +108,7 @@ def consolidate_review(context_directory):
     from scripts.checklist_sync import checklist_status
     return dict(rows=rows,pairs=pairs,observation_056=observation,inputs=inputs,checklist_status=checklist_status(list(human.values())),
                 canonical_split_signature=saved['canonical_split_signature'],
+                runtime_dataset_root=current['dataset_root'],recorded_dataset_root=saved['dataset_root'],
                 technical_checks='PASS (identity checks only): candidate/context identities, file SHA-256, checklist identities and source-disjoint split assignments',
                 technical_status='BLOCKED' if any(p['kind'] in {'EXACT_BYTES','exact_file_duplicate'} and p['cross_split'] for p in pairs) or temporal_status.startswith('Existing temporal utility: FAIL') else 'IDENTITY CHECKS PASS; HUMAN REVIEW PENDING',
                 temporal_evidence=temporal_status,human_approval='PENDING',training_executed=False,
@@ -123,7 +122,7 @@ def write_dashboard(context_directory, interactive=False, resume=False, analyze=
     output.mkdir(exist_ok=False)
     if analyze:
         from scripts.context_analysis import analyze_context
-        plan=context_plan(json.loads((Path(context_directory)/'context_metadata.json').read_text())['validation_path'])
+        plan=ensure_review_dataset(context_directory)
         report['automatic_analysis']=analyze_context(plan,output/'automatic_analysis')
         report['automatic_analysis_dir']=str(output/'automatic_analysis')
     (output/'review_report.json').write_text(json.dumps(report,indent=2))
@@ -155,7 +154,7 @@ def write_dashboard(context_directory, interactive=False, resume=False, analyze=
     page=''.join(parts)
     if interactive:
         from scripts.review_interface import render_review_interface, register_drive_callback
-        plan=context_plan(json.loads((Path(context_directory)/'context_metadata.json').read_text())['validation_path'])
+        plan=ensure_review_dataset(context_directory)
         callback=register_drive_callback(context_directory,report)
         initial,restored_from={},None
         if resume:

@@ -72,19 +72,22 @@ def recovery_message(directory, error):
             'No dataset inspection, preparation, split, or training was run. Existing annotations remain untouched.\n'+recorded+
             'Recovery: confirm the correct Google Drive account and existing review folder. '
             'Read context_metadata.json (dataset_root and validation_path) and the saved validation/inspection manifests for the recorded paths. '
-            'If Kaggle cache files disappeared, download the SAME recorded DCSASS version and restore its files at those recorded paths, '
-            'then rerun this launcher. Files must pass the existing containment, canonical-identity and SHA-256 checks. '
+            'If Kaggle cache files disappeared, run the Restore exact saved-review dataset recovery cell. '
+            'Set REVIEW_DATASET_ROOT to a full original dataset copy or RECOVERY_VERSION to the SAME recorded DCSASS version; '
+            'the launcher can accept a different root only after full canonical/copy-count/SHA-256 verification. '
             'A different download root is not silently substituted. Do not Run all, rerun preparation, regenerate a split, or enable training flags. '
             'If inputs were edited, reconcile the existing saved snapshots rather than deleting annotations.')
 
 
-def launch_saved_review(output, explicit=None):
+def launch_saved_review(output, explicit=None, *, dataset_root=None):
     """Called only after Colab setup/Drive mounting; never downloads the dataset."""
     from scripts.review_dashboard import write_dashboard
     directory=None
     try:
         directory=choose_context(output,explicit)
         print('Existing review folder:',directory)
+        from scripts.review_paths import ensure_review_dataset
+        ensure_review_dataset(directory,dataset_root)
         dashboard=write_dashboard(directory,interactive=True,resume=True,analyze=True)
     except (ValueError,FileNotFoundError,KeyError,OSError) as exc:
         raise RuntimeError(recovery_message(directory or output,exc)) from exc

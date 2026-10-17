@@ -93,7 +93,7 @@ def test_one_cell_launcher_is_first_code_and_disables_training():
     assert code.id=='launch-saved-review-dashboard'
     assert 'drive.mount' in code.source and "'fetch', 'origin', 'main'" in code.source
     assert 'SOURCE_MAPPING_REVIEWED = False' in code.source and 'RUN_PROTOTYPE_TRAINING = False' in code.source
-    assert 'launch_saved_review(OUTPUT, REVIEW_CONTEXT_FOLDER)' in code.source
+    assert 'launch_saved_review(OUTPUT, REVIEW_CONTEXT_FOLDER, dataset_root=REVIEW_DATASET_ROOT)' in code.source
     assert 'prepare_smoke(' not in code.source and 'dataset_download(' not in code.source
 
 

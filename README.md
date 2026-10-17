@@ -21,7 +21,7 @@ The launcher mounts Drive, safely fast-forwards the clean Git checkout to main,
 installs dependencies, and loads existing review artifacts. It prefers a folder
 with human annotations/saved decisions over a newer blank review and prints its
 selection. Set `REVIEW_CONTEXT_FOLDER` only if you need a particular existing
-folder. It never downloads a dataset, inspects data, prepares/resplits candidates,
+folder. The launcher itself never downloads a dataset, inspects data, prepares/resplits candidates,
 or starts training. A dirty/diverged checkout stops without resetting local work.
 
 Previously saved explicit human decisions and notes are restored after identity
@@ -36,11 +36,19 @@ inside the printed Drive context-review folder. Original checklists and earlier
 versions are preserved. Save before disconnecting or rerunning; unsaved browser
 edits are not durable. Both training flags remain False regardless of decisions.
 
-If Kaggle files disappeared in a new session, the launcher reports recovery
-instructions: locate the recorded `dataset_root`/validation paths in the existing
-metadata, restore the same dataset version at those paths, then rerun this cell.
-It does not silently use a different root, substitute videos or regenerate a
-candidate. Files must pass the existing path, canonical-identity and SHA-256 checks.
+If Kaggle files disappeared in a new session, the launcher first looks in known
+Colab/KaggleHub caches. It accepts a relocated package only after saved canonical
+identities, physical duplicate counts and SHA-256 content match. It builds a
+temporary path-only view; original manifests and review metadata stay untouched.
+The active default review is `review-bd132d7b024a`; no new review is created.
+If no valid copy exists, run **Restore exact saved-review dataset** immediately
+below the launcher. Point `REVIEW_DATASET_ROOT` at a full original backup, or set
+`RECOVERY_VERSION` to the exact original Kaggle version and run that cell. If the
+version is recorded as `/versions/N`, it can be inferred; an unversioned mount
+like `/kaggle/input/dcsass-dataset` cannot identify N. Unknown versions stop before
+downloading anything. Recover the original version number or full backup first;
+latest, a different release, and just the 12 exported clips are not substitutes.
+Do not rerun inspection, preparation, splitting or the correction merely to resume.
 
 ## Initial dataset/training preparation in Google Colab
 
@@ -689,3 +697,31 @@ and use their existing `notes` column. Repeating an already applied correction i
 a no-op. Stale previews, missing/ambiguous source IDs or changed inputs are rejected.
 Neither training flag changes and no training starts. The code prepares a Colab
 workflow; it does not mean your actual Drive files were modified from this workspace.
+
+### Saved Kaggle paths in fresh Colab runtimes
+
+The saved-review reader uses `scripts/review_paths.py` to bind missing Kaggle video
+paths to a valid local package. Discovery covers the recorded root, standard
+KaggleHub caches (including `KAGGLEHUB_CACHE`) and bounded named Colab/project dataset
+directories. Use `REVIEW_DATASET_ROOT` for a custom full-package location. Every
+relocated canonical clip and duplicate physical copy must match the saved
+inspection SHA-256 and copy counts. Selected source assignments, split signature,
+context roles, filenames, sizes and hashes must still match the existing review.
+Nothing selects new clips or replaces the candidate.
+
+Only temporary local inspection/manifest path views are written. No existing Drive
+metadata, manifest, checklist, decision CSV, correction backup or audit is rebased
+or rewritten. Original artifact hashes remain the human-decision provenance inputs,
+so the approved `vandalism019_x264` Uncertain correction resumes unchanged. Missing
+artifact paths are located only at bounded project-relative locations, with their
+saved hashes/signatures checked; lost original artifacts must be recovered from
+backup rather than regenerated. Subsequent callbacks validate the original inputs
+and the temporary view/current selected/context clip hashes again.
+
+Root relocation verifies the whole saved dataset package and can take time; it is
+not dataset inspection or model training. The launcher prints verification progress
+and accepted root, then opens the existing dashboard. A recovery download is only
+from an explicitly known `mateohervas/dcsass-dataset/versions/N` and is still rejected
+unless the full saved identities and hashes match. If Kaggle requires credentials,
+authorize KaggleHub in Colab through its supported login. No authentication or actual
+Drive/dataset access is implied by the local regression tests.
