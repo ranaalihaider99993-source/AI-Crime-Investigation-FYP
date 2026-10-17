@@ -464,3 +464,40 @@ end-to-end dashboard/OpenCV evidence against a relocated fixture root. Python
 compilation and diff whitespace checks passed. Actual Google Colab, Google Drive
 and the real DCSASS package were not accessed; real-data verification happens when
 the user runs the updated launcher/recovery cell against the saved artifacts.
+
+### Automatic missing-dataset recovery using complete-manifest verification
+
+Repository investigation: the committed dataset downloads are unversioned. Version-1
+path diagnostics/test examples do not bind a historical version to the current
+review's `/kaggle/input/dcsass-dataset` path. Real Drive artifacts are unavailable in
+this coding workspace. At runtime the recovery cell now checks the bound context,
+validation/inspection JSON (including nested path-resolution records) and original
+manifest paths. A uniquely recorded version is used exactly. Missing/conflicting
+version records do not cause an invented historical version claim.
+
+An explicitly run default recovery cell may download one current-release candidate
+from the known DCSASS owner. Before downloading it requires saved SHA-256 evidence
+for every canonical video; it prints the expected inventory, large-download/local
+storage guidance and Kaggle authentication instructions without credentials. The
+candidate is not accepted until the existing full canonical/copy-count/SHA-256
+verifier succeeds. Original metadata fingerprints are checked across the download.
+A mismatch, unavailable evidence or authentication/download failure stops safely.
+No release loop, split regeneration, preparation, semantic approval or training is
+used. The Python API retains opt-in for candidate downloads.
+
+A new append-only recovery receipt distinguishes historical recorded version from
+downloaded cache version and complete content match. Original review/checklist,
+all decisions/notes, correction backups and audits remain byte-identical. Tests
+exercise recovered nested version evidence, a verified unknown-version candidate,
+rejected changed candidate content, absent saved hashes, authentication guidance,
+concurrent source-record changes and the default recovery-cell guard. The approved
+vandalism019 Uncertain answer must still resume. Download tests use a mocked SDK
+and generated clips, not actual Kaggle/Colab/Drive execution.
+
+Validation: **134 pytest tests passed**; Python compilation and diff whitespace
+checks also passed. Additional coverage verifies fully rechecking existing caches,
+including excluded duplicate bytes outside selected playback paths, and avoiding a
+download when an existing full package matches. No actual DCSASS download, Colab
+execution or Google Drive restoration was performed in this workspace. The user
+must run the updated recovery cell once and receive the full-verification success
+receipt; rejected candidates require the original backup or another known version.

@@ -10,10 +10,12 @@ import json
 import os
 import re
 import tempfile
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from scripts.context_review import context_plan
 from scripts.data import VIDEO_EXT, canonical_clip, source_id, file_hash, write_csv
-from scripts.dataset_paths import resolve_inspection_paths, resolve_dataset_root
+from scripts.dataset_paths import resolve_inspection_paths, resolve_dataset_root, _kaggle_package
 from scripts.smoke import artifact_hashes, read_csv, require
 
 _BINDINGS={}
@@ -174,25 +176,110 @@ def ensure_review_dataset(directory, dataset_root=None):
     detail='\n'.join(errors) if errors else 'No DCSASS dataset root was found in this runtime.'
     raise FileNotFoundError('Dataset directory missing or no relocated root passed verification.\n'+detail+
         '\nRun Notebook 02 recovery cell "Restore exact saved-review dataset". Set REVIEW_DATASET_ROOT to your full original dataset copy, '
-        'or set RECOVERY_VERSION to its exact Kaggle version and run recovery. If the original version is unknown, recover that version number or the original full dataset backup first. '
+        'or run the default recovery cell to investigate recorded version evidence and verify one downloaded candidate against the COMPLETE saved manifest. An unknown historical version is not guessed. '
         'Only the 12 exported videos are insufficient for full saved-inspection verification. Do not rerun inspection, preparation or splitting.')
 
 
-def recover_review_dataset(directory, *, existing_root=None, version=None):
-    """Explicit recovery cell only. Never implicitly download an unknown latest release."""
+def recovery_evidence(directory):
+    """Inspect bound records, not README/test examples or unbound external logs."""
+    saved,validation,report,manifest,inspection=_artifacts(directory)
+    metadata=json.loads((inspection/'inspection.json').read_text())
+    full=read_csv(inspection/'manifest.csv');duplicates=read_csv(inspection/'excluded_duplicates.csv')
+    keys={r['canonical_clip'] for r in full}
+    require(full and len(keys)==len(full),'Saved full manifest is empty or has duplicate canonical IDs')
+    hashes=dict(metadata.get('clip_sha256',{}))
+    for row in duplicates:
+        key,digest=row['canonical_clip'],row['sha256']
+        require(key in keys and (key not in hashes or hashes[key]==digest),'Conflicting saved duplicate SHA evidence')
+        hashes[key]=digest
+    require(all(re.fullmatch(r'[0-9a-f]{64}',hashes.get(key,'')) for key in keys),
+            'Complete original SHA-256 evidence is unavailable. Restore the ORIGINAL inspection/duplicate audit from backup; no candidate download can be safely accepted without it')
+    citations={}
+    def inspect_values(value,origin):
+        if isinstance(value,dict):
+            for key,item in value.items():inspect_values(item,origin+'.'+str(key))
+        elif isinstance(value,list):
+            for i,item in enumerate(value):inspect_values(item,origin+'['+str(i)+']')
+        elif isinstance(value,str) and value.startswith('/'):
+            try:package=_kaggle_package(Path(value))
+            except ValueError:return
+            if package and len(package.parts)>=2 and package.parts[-2]=='versions':
+                version=package.parts[-1]
+                examples=citations.setdefault(version,[])
+                if len(examples)<5:examples.append(dict(record=origin,path=value))
+    inspect_values(saved,'context_metadata.json')
+    inspect_values(report,'validation.json')
+    inspect_values(metadata,'inspection.json')
+    inspect_values(read_csv(manifest),'candidate_manifest')
+    inspect_values(full,'inspection_manifest')
+    return dict(recorded_versions=sorted(citations,key=int),version_evidence=citations,
+                unique_clips=len(full),physical_copies=len(full)+len(duplicates),
+                source_fingerprints=_fingerprints(directory,validation,manifest,inspection))
+
+
+def recover_review_dataset(directory, *, existing_root=None, version=None, allow_candidate=False):
+    """Explicit recovery action; a candidate is NEVER trusted as the original release.
+
+    Exact historical version if bound records establish one; otherwise an explicit
+    candidate opt-in downloads ONE current release and requires identical complete
+    manifest/copy-count/SHA evidence. No iteration, split, inspection or training.
+    """
+    directory=Path(directory).resolve()
     if existing_root is not None:
         plan=ensure_review_dataset(directory,existing_root);return Path(plan['dataset_root'])
-    saved,_,report,_,inspection=_artifacts(directory)
-    recorded=[saved['dataset_root'],report['data_root'],json.loads((inspection/'inspection.json').read_text()).get('dataset_root','')]
-    known={m[1] for value in recorded if (m:=re.search(r'/versions/(\d+)(?:/|$)',value))}
-    if version is None:
-        require(len(known)==1,'Original Kaggle version is not recorded unambiguously. Set RECOVERY_VERSION to the original version number from Kaggle dataset history, or set REVIEW_DATASET_ROOT to a full original dataset backup; latest will NOT be substituted')
-        version=next(iter(known))
-    require(str(version).isdigit() and int(version)>0,'RECOVERY_VERSION must be a positive exact Kaggle version number')
-    if known:require(known=={str(version)},'Recovery version conflicts with recorded version')
+    evidence=recovery_evidence(directory)
+    known=set(evidence['recorded_versions'])
+    if version is None and len(known)==1:version=next(iter(known))
+    if version is not None:
+        require(str(version).isdigit() and int(version)>0,'RECOVERY_VERSION must be a positive exact Kaggle version number')
+        if known:require(str(version) in known,'Recovery version conflicts with recorded version')
+        handle=DATASET+'/versions/'+str(version)
+        mode='recorded-version' if known=={str(version)} else 'explicit-version-candidate'
+        print('Recorded version evidence:',evidence['version_evidence'] or 'No historical version ID recorded',flush=True)
+    else:
+        require(allow_candidate is True,'Original Kaggle version is not recorded unambiguously. Run the recovery cell with its explicit verified-candidate option, or provide RECOVERY_VERSION/full original backup. No unverified release will be accepted')
+        handle=DATASET;mode='current-release-candidate'
+        print('Historical version is NOT established. One current DCSASS release will be downloaded as an UNTRUSTED CANDIDATE, not assumed original.',flush=True)
+        if known:print('Conflicting recorded versions:',evidence['version_evidence'],flush=True)
+    print('Expected from saved records:',evidence['unique_clips'],'canonical clips;',evidence['physical_copies'],'physical video copies. ALL identities, copy counts and SHA-256 hashes must match.',flush=True)
+    print('This can download the FULL large dataset. Keep Colab connected; local free space:',round(shutil.disk_usage(tempfile.gettempdir()).free/1024**3,1),'GiB. No review files will be replaced.',flush=True)
+    print('If Kaggle requests authentication, sign in/accept dataset access on Kaggle and run import kagglehub; kagglehub.login() in Colab, then retry. Never paste credentials into committed cells.',flush=True)
+    # Candidate opt-in may reuse a valid package already found since launcher startup.
+    if allow_candidate is True:
+        for root in discover_dataset_roots(directory):
+            # Recovery revalidates the full package, not just a previously bound
+            # selected/context subset, even when the SDK/cache is already present.
+            _BINDINGS.pop(str(directory),None)
+            try:
+                plan=ensure_review_dataset(directory,root)
+                print('Existing local package fully verified; no download needed.',flush=True)
+                return Path(plan['dataset_root'])
+            except FileNotFoundError:continue
     import kagglehub
-    handle=DATASET+'/versions/'+str(version)
-    print('Downloading exact version for verification, not yet accepted:',handle,flush=True)
-    downloaded=kagglehub.dataset_download(handle)
-    plan=ensure_review_dataset(directory,downloaded)
+    print('Downloading for verification, NOT YET ACCEPTED:',handle,flush=True)
+    try:
+        downloaded=kagglehub.dataset_download(handle)
+    except Exception as exc:
+        raise RuntimeError('Kaggle download did not complete; no review files changed. For authentication/access errors, authorize with kagglehub.login() and accept Kaggle dataset access, then rerun this recovery cell. For network/storage errors, restore connectivity or free Colab-local space without deleting Drive reviews/backups. Credentials must stay out of notebook source.') from exc
+    # Force a fresh complete verification even if the SDK reused an existing cache.
+    _BINDINGS.pop(str(directory),None)
+    try:
+        require(all(Path(path).is_file() and file_hash(path)==digest for path,digest in evidence['source_fingerprints'].items()),'Saved dataset records changed during download; retry against the preserved original records')
+        plan=ensure_review_dataset(directory,downloaded)
+        require(all(Path(path).is_file() and file_hash(path)==digest for path,digest in evidence['source_fingerprints'].items()),'Saved dataset records changed during verification')
+    except (OSError,ValueError,KeyError) as exc:
+        _BINDINGS.pop(str(directory),None)
+        raise RuntimeError('Downloaded candidate REJECTED by complete saved-manifest verification. Existing human files/corrections are unchanged. Recover the original full backup or exact dataset version; do not regenerate the review or split. A latest release is never accepted merely because its name matches.') from exc
+    stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    receipt_dir=directory/('dataset-recovery-'+stamp+'-'+uuid.uuid4().hex[:8]);receipt_dir.mkdir(exist_ok=False)
+    package=_kaggle_package(Path(downloaded).absolute())
+    cache_version=package.parts[-1] if package and package.parts[-2]=='versions' else None
+    receipt=dict(mode=mode,requested_handle=handle,recorded_version_evidence=evidence['version_evidence'],
+                 historical_version_established=len(known)==1,downloaded_cache_version=cache_version,
+                 verification='COMPLETE_SAVED_VIDEO_MANIFEST_MATCH',unique_clips=evidence['unique_clips'],physical_copies=evidence['physical_copies'],
+                 dataset_root=plan['dataset_root'],canonical_split_signature=plan['canonical_split_signature'],
+                 original_source_fingerprints=evidence['source_fingerprints'],human_files_modified=False,training_executed=False)
+    (receipt_dir/'recovery_receipt.json').write_text(json.dumps(receipt,indent=2))
+    print('ACCEPTED: complete saved video identities, copy counts and SHA-256 match. Historical version remains unknown unless explicitly established by the recorded evidence above.',flush=True)
+    print('Recovery receipt:',receipt_dir/'recovery_receipt.json',flush=True)
     return Path(plan['dataset_root'])

@@ -42,13 +42,20 @@ identities, physical duplicate counts and SHA-256 content match. It builds a
 temporary path-only view; original manifests and review metadata stay untouched.
 The active default review is `review-bd132d7b024a`; no new review is created.
 If no valid copy exists, run **Restore exact saved-review dataset** immediately
-below the launcher. Point `REVIEW_DATASET_ROOT` at a full original backup, or set
-`RECOVERY_VERSION` to the exact original Kaggle version and run that cell. If the
-version is recorded as `/versions/N`, it can be inferred; an unversioned mount
-like `/kaggle/input/dcsass-dataset` cannot identify N. Unknown versions stop before
-downloading anything. Recover the original version number or full backup first;
-latest, a different release, and just the 12 exported clips are not substitutes.
-Do not rerun inspection, preparation, splitting or the correction merely to resume.
+below the launcher **with its defaults**. No path/version editing is normally
+needed. It reads bound version evidence; a unique recorded version is requested
+exactly. If the version cannot be established, the cell authorizes ONE current
+DCSASS release as an untrusted candidate and accepts it only if the COMPLETE saved
+canonical inventory, physical copy counts and SHA-256 hashes match. A dataset name,
+clip count or "latest" version number alone is never enough.
+
+This may be a large full-dataset download. The cell prints available local disk
+and authentication instructions. If Kaggle requires access, sign in/accept dataset
+access and run `import kagglehub; kagglehub.login()` in Colab, then retry. Do not
+hardcode keys/passwords. Mismatches stop without modifying the original review;
+then recover an original full backup or known version. The exported 12 clips are
+not a full dataset substitute. Do not rerun inspection, preparation, splitting or
+the correction merely to resume. Neither training flag changes.
 
 ## Initial dataset/training preparation in Google Colab
 
@@ -720,8 +727,43 @@ and the temporary view/current selected/context clip hashes again.
 
 Root relocation verifies the whole saved dataset package and can take time; it is
 not dataset inspection or model training. The launcher prints verification progress
-and accepted root, then opens the existing dashboard. A recovery download is only
-from an explicitly known `mateohervas/dcsass-dataset/versions/N` and is still rejected
-unless the full saved identities and hashes match. If Kaggle requires credentials,
+and accepted root, then opens the existing dashboard. Recovery prefers a uniquely recorded
+`mateohervas/dcsass-dataset/versions/N`. The explicitly run recovery cell can instead
+verify one current-release candidate against the same COMPLETE saved identities,
+copy counts and hashes; no requirement is weakened. If Kaggle requires credentials,
 authorize KaggleHub in Colab through its supported login. No authentication or actual
 Drive/dataset access is implied by the local regression tests.
+
+### Automatic recovery when the original version number is unknown
+
+Investigation found unversioned `kagglehub.dataset_download('mateohervas/dcsass-dataset')`
+configuration. Historical diagnostics/test fixtures mentioning version 1 are not
+bound proof of the version used for this saved review. The recovery cell examines
+only the actual pinned Drive context, validation/inspection JSON (including nested
+root-resolution records) and original manifest paths for version evidence. Numeric
+schema/model/OpenCV versions and repository test examples are not dataset evidence.
+A single recorded version can be used; conflicting or absent versions remain unknown.
+
+Because the original complete canonical inventory and video SHA-256 evidence are
+saved, a candidate CAN identify the original video content without establishing
+its historical Kaggle release number. The recovery cell explicitly opts into this
+one-candidate download; the Python API remains strict unless `allow_candidate=True`
+is supplied. It first requires complete saved per-clip hashes (including valid
+legacy duplicate-audit evidence). It does not search/download releases repeatedly,
+regenerate manifests, infer labels, or bypass duplicate/source/path checks.
+
+A matching download writes a new `dataset-recovery-<UTC>-<id>/recovery_receipt.json`
+inside the existing context folder and opens the existing dashboard. The receipt
+separates recorded historical version evidence from the downloaded cache version,
+records complete-manifest verification and input fingerprints, and explicitly
+keeps historical identity unknown when appropriate. It never edits old records,
+review notes, decision files, the corrected vandalism019 label, or training flags.
+Source artifacts are checked again across the long download/verification interval.
+A mismatch or unavailable original SHA evidence stops safely and requires the
+original backup/version rather than treating a new release as the original.
+
+These changes do not mean the real dataset has been restored by the coding agent.
+The one-time remaining action is to run the updated recovery cell in the user's
+Drive-authorized Colab session, authorize Kaggle if prompted, and wait for the
+complete verification and accepted-root receipt. If it rejects the candidate,
+recover the original dataset backup or original release number before proceeding.

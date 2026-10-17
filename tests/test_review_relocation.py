@@ -174,3 +174,127 @@ def test_historical_context_path_escape_is_not_ignored(saved_review):
     path.write_text(json.dumps(metadata))
     with pytest.raises(FileNotFoundError,match='outside its recorded dataset root'):
         ensure_review_dataset(directory,cache)
+
+
+def test_candidate_download_matches_complete_manifest_without_assuming_version(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    monkeypatch.setattr(review_paths,'discover_dataset_roots',lambda directory:[])
+    calls=[]
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:calls.append(handle) or str(cache)))
+    root=recover_review_dataset(directory,allow_candidate=True)
+    assert root==cache and calls==['mateohervas/dcsass-dataset']
+    restored,_=resume_decisions(directory,consolidate_review(directory))
+    assert restored[SOURCE]['label_visible']=='Uncertain'
+    receipts=list(directory.glob('dataset-recovery-*/recovery_receipt.json'))
+    assert len(receipts)==1
+    receipt=json.loads(receipts[0].read_text())
+    assert receipt['historical_version_established'] is False
+    assert receipt['downloaded_cache_version']=='1'
+    assert receipt['verification']=='COMPLETE_SAVED_VIDEO_MANIFEST_MATCH'
+    assert receipt['physical_copies']==72 and receipt['unique_clips']==36
+    assert_unchanged(protected)
+
+
+def test_candidate_mismatch_is_rejected_and_never_resets_human_review(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    monkeypatch.setattr(review_paths,'discover_dataset_roots',lambda directory:[])
+    next(cache.rglob('*.avi')).write_bytes(b'wrong release bytes')
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:str(cache)))
+    with pytest.raises(RuntimeError,match='REJECTED by complete saved-manifest'):
+        recover_review_dataset(directory,allow_candidate=True)
+    assert not list(directory.glob('dataset-recovery-*'))
+    assert str(directory.resolve()) not in review_paths._BINDINGS
+    assert_unchanged(protected)
+
+
+def test_version_in_nested_bound_download_record_is_recovered(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    path=directory.parent.parent/'validation.json';report=json.loads(path.read_text())
+    report['path_resolution']={'selected_download_root':'/root/.cache/kagglehub/datasets/mateohervas/dcsass-dataset/versions/7'}
+    path.write_text(json.dumps(report))
+    calls=[]
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:calls.append(handle) or str(cache)))
+    recover_review_dataset(directory)
+    assert calls==['mateohervas/dcsass-dataset/versions/7']
+    receipt=json.loads(next(directory.glob('dataset-recovery-*/recovery_receipt.json')).read_text())
+    assert receipt['historical_version_established'] is True
+    assert 'validation.json.path_resolution.selected_download_root' in str(receipt['recorded_version_evidence'])
+
+
+def test_authentication_failure_gives_login_instructions_without_changes(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    monkeypatch.setattr(review_paths,'discover_dataset_roots',lambda directory:[])
+    def login_required(handle):raise PermissionError('fixture: authentication needed')
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=login_required))
+    with pytest.raises(RuntimeError,match='kagglehub.login') as error:
+        recover_review_dataset(directory,allow_candidate=True)
+    assert 'no review files changed' in str(error.value)
+    assert not list(directory.glob('dataset-recovery-*'))
+    assert_unchanged(protected)
+
+
+def test_incomplete_saved_sha_evidence_blocks_download(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    inspection=output/'inspection';metadata=json.loads((inspection/'inspection.json').read_text())
+    missing=next(iter(metadata['clip_sha256']));metadata['clip_sha256'].pop(missing)
+    (inspection/'inspection.json').write_text(json.dumps(metadata))
+    import csv
+    path=inspection/'excluded_duplicates.csv';rows=read_csv(path)
+    next(row for row in rows if row['canonical_clip']==missing)['sha256']=''
+    with path.open('w',newline='') as f:
+        writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+    path=directory.parent.parent/'validation.json';report=json.loads(path.read_text())
+    report['artifact_hashes']=artifact_hashes(inspection);report['original_artifact_hashes']=report['artifact_hashes']
+    path.write_text(json.dumps(report))
+    calls=[];monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:calls.append(handle)))
+    with pytest.raises(ValueError,match='Complete original SHA-256 evidence'):
+        recover_review_dataset(directory,allow_candidate=True)
+    assert calls==[]
+    assert (directory/'human_checklist.csv').read_bytes()==protected[directory/'human_checklist.csv']
+
+
+def test_default_recovery_cell_opts_in_to_verified_candidate_without_training():
+    import nbformat
+    notebook=nbformat.read('notebooks/02_Crime_Classification_Training.ipynb',as_version=4)
+    cell=next(c for c in notebook.cells if c.id=='restore-exact-saved-review-dataset')
+    assert 'allow_candidate=True' in cell.source
+    assert 'RECOVERY_VERSION = None' in cell.source
+    assert 'prepare_smoke(' not in cell.source and 'split_manifest(' not in cell.source
+    assert 'SOURCE_MAPPING_REVIEWED = True' not in cell.source and 'RUN_PROTOTYPE_TRAINING = True' not in cell.source
+
+
+def test_dataset_records_changed_during_download_stop_acceptance(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    monkeypatch.setattr(review_paths,'discover_dataset_roots',lambda directory:[])
+    candidate=directory.parent.parent/'candidate_splits.csv'
+    original=candidate.read_bytes()
+    def concurrent_change(handle):
+        candidate.write_bytes(original+b'\n')
+        return str(cache)
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=concurrent_change))
+    with pytest.raises(RuntimeError,match='REJECTED by complete saved-manifest'):
+        recover_review_dataset(directory,allow_candidate=True)
+    assert not list(directory.glob('dataset-recovery-*'))
+    assert (directory/'human_checklist.csv').read_bytes()==protected[directory/'human_checklist.csv']
+
+
+def test_valid_local_copy_recovery_avoids_download_and_keeps_review(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    calls=[];monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:calls.append(handle)))
+    assert recover_review_dataset(directory,allow_candidate=True)==cache
+    assert calls==[]
+    assert_unchanged(protected)
+
+
+def test_recovery_rechecks_cached_duplicate_bytes_outside_selected_clips(saved_review,monkeypatch):
+    directory,cache,protected,output=saved_review
+    ensure_review_dataset(directory,cache)
+    # Excluded physical mirror copies are not selected playback paths. Their
+    # hashes must still be rechecked by recovery instead of trusting a binding.
+    excluded=next((cache/'dcsass dataset').rglob('*.avi'))
+    excluded.write_bytes(excluded.read_bytes()+b'changed duplicate')
+    monkeypatch.setitem(sys.modules,'kagglehub',SimpleNamespace(dataset_download=lambda handle:str(cache)))
+    with pytest.raises(RuntimeError,match='REJECTED by complete saved-manifest'):
+        recover_review_dataset(directory,allow_candidate=True)
+    assert not list(directory.glob('dataset-recovery-*'))
+    assert_unchanged(protected)

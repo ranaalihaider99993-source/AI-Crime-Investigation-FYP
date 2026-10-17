@@ -75,7 +75,7 @@ def recovery_message(directory, error):
             'If Kaggle cache files disappeared, run the Restore exact saved-review dataset recovery cell. '
             'Set REVIEW_DATASET_ROOT to a full original dataset copy or RECOVERY_VERSION to the SAME recorded DCSASS version; '
             'the launcher can accept a different root only after full canonical/copy-count/SHA-256 verification. '
-            'A different download root is not silently substituted. Do not Run all, rerun preparation, regenerate a split, or enable training flags. '
+            'If no version can be established, the default recovery cell can verify one candidate against the complete saved identities/copy counts/SHA-256; mismatches are rejected. A different dataset is not silently substituted. Do not Run all, rerun preparation, regenerate a split, or enable training flags. '
             'If inputs were edited, reconcile the existing saved snapshots rather than deleting annotations.')
 
 
