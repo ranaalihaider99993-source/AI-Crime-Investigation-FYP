@@ -251,3 +251,20 @@ notebook 02, run setup/Drive mounting only, then `original-video-players` direct
 rerun Automatic preparation/Run all for this workflow. Export with `export-original-videos`
 only when requested; preserve the same saved candidate. Destination:
 `MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/original_video_review/original_video_review.zip`.
+
+### Source-context review regression coverage
+
+The additive `scripts/context_review.py` workflow binds to the existing passing
+validation report, candidate-file hash/split signature, full inspection artifact
+hashes, and saved clip SHA-256 evidence. It does not invoke the splitter or trainer.
+It selects at most one nearest numeric predecessor and successor per source;
+unknown/ambiguous ordering gets no guessed neighbors. Gaps/boundaries are explicit.
+Path containment and canonical identities are checked before reading context
+content, and containment/content hashes are checked again before playback.
+
+Local tests cover numeric ordering (1, 2, 10), source boundaries, unchanged candidate
+bytes, matching source/split metadata, pending checklists, unique output folders,
+stale inspection artifacts, altered video content and symlink escapes. The actual
+notebook context cell also runs against the duplicated-root test fixture with both
+training flags False. These are local generated-video tests, not real DCSASS review
+or Colab execution. Semantic labels and incident independence remain unverified.

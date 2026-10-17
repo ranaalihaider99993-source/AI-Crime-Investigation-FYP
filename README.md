@@ -424,3 +424,32 @@ python -m scripts.evaluate gru annotations/synthetic_scenarios.csv artifacts/sce
 
 Do not run expensive full training without confirmation. Tests use generated temporary videos,
 not real crime footage. See `reports/validation.md` for actual execution status.
+
+### Review selected clips with same-source context (no training)
+
+Open the latest [Notebook 02](https://colab.research.google.com/github/ranaalihaider99993-source/AI-Crime-Investigation-FYP/blob/main/notebooks/02_Crime_Classification_Training.ipynb).
+For an existing 12-clip preparation, run **setup/Drive mount (`cell-1`)**, then
+**Source-context review players (`source-context-players`)**. Do not Run all or
+rerun Automatic preparation. The setup cell updates the code from GitHub main.
+The saved resolved dataset files must still be accessible; if paths are missing,
+stop and restore that validated dataset rather than selecting a new candidate.
+Notebook 01 does not need rerunning for this feature.
+
+Each selected original is shown alongside the nearest available numeric segment
+before/after it from the same canonical source. The candidate CSV and all split
+assignments remain unchanged; neighbors are context only. Numbered filenames
+suggest order, not verified timing or incident continuity. Missing/ambiguous
+ordering and gaps are reported. Source names and class mappings are technical
+identities, not human approval of labels or incident independence.
+
+A unique folder is printed under
+`/content/drive/MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/smoke_preparation/source_context_review/review-<id>/`.
+It contains `context_metadata.json`, `human_checklist.csv`, and `README.md`.
+Watch all displayed videos, record whether the selected clip itself shows the
+crime or only neighboring context does, and compare sources for related incidents.
+Record uncertain/absent labels and related source IDs. Every decision starts
+PENDING; prior checklists are preserved. The existing original-video ZIP remains
+bounded to its original 12 clips. Context videos are played without transcoding,
+not copied into that ZIP or added to training. Inline playback has a 128 MiB total
+and 64 MiB per-file bound. Browser codec support may vary.
+Both `SOURCE_MAPPING_REVIEWED` and `RUN_PROTOTYPE_TRAINING` remain False.
