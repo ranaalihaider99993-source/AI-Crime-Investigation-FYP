@@ -284,3 +284,28 @@ Regression coverage includes notes preservation, low-motion flags, identity tamp
 ambiguous source 056, HTML escaping, existing temporal cross-split findings, stale
 evidence rejection, and actual default notebook-cell execution with training disabled.
 These checks do not constitute actual DCSASS human review or Colab execution.
+
+### Interactive review decisions
+
+The Colab dashboard adds original-byte players and explicit per-source controls;
+Pending is the initial value for all decisions, irrespective of filenames,
+heuristics or pre-existing checklist answers. Fighting and low-motion Vandalism
+are highlighted for attention only. The existing validated context player provides
+containment and SHA-256 checks before embedding. No playback event grants approval.
+
+A registered Colab callback accepts exactly 12 unique bound source IDs, known
+option values and reviewer text. On each explicit save it revalidates the context,
+candidate, checklist and temporal evidence, rejects stale input snapshots or
+forged identities/splits, and writes a new decisions CSV plus provenance JSON.
+The input checklist and candidate are untouched. Both training flags remain False.
+Local tests exercise controls/defaults, highlighting, HTML escaping, decision
+persistence, spreadsheet escaping, non-overwrite behavior, stale inputs and invalid
+payload rejection. These tests use generated videos, not real-data human review
+or proof that the live Colab/Drive callback succeeded.
+
+Validation for this change: **74 pytest tests passed**. A local Chromium fixture
+also exercised Pending defaults, control edits, JavaScript submission payload,
+simulated save receipt, callback errors and missing-Colab handling. The Python
+registered-callback integration was tested with a local Colab API stub. No real
+Colab runtime or Drive callback was used in these checks, and no video-content
+understanding or human review is claimed.

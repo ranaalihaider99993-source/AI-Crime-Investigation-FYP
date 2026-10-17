@@ -484,3 +484,35 @@ the selection; absent/ambiguous IDs stay unresolved in the dashboard. Existing
 checklists/notes and prior dashboard snapshots are preserved. Both training flags
 remain False. Generating real Drive reports requires running the cell in your
 Drive-authorized Colab session; local tests are generated-video fixtures only.
+
+### Review videos and save decisions without editing CSV
+
+The **Consolidated review dashboard** cell now provides an interactive form in
+Colab. Open the latest Notebook 02, run setup/Drive mount (`cell-1`), then run
+`consolidated-review-dashboard`. Use the existing context folder; do not rerun
+preparation. Confirm the printed folder or set `CONTEXT_DIRECTORY` explicitly.
+
+Each source card includes the selected original and available preceding/following
+videos, flags, and controls for selected-clip label visibility, watching all shown
+videos, incident independence, reviewer name, and notes. All decision controls
+start **Pending**. Choose **Confirmed**, **Uncertain**, **Rejected**, or **Pending**
+for the stated claim; playback events never automatically mark videos watched.
+Fighting and low-motion Vandalism cards receive closer-inspection highlights.
+The expandable evidence section retains technical findings and attributed notes.
+
+Click **Save review decisions to Google Drive** below the 12 cards and wait for
+the receipt containing the CSV path. Each click writes a fresh
+`decisions-<id>/review_decisions.csv` and `provenance.json` inside the chosen context
+folder. The original checklist, dataset, candidate and splits stay unchanged.
+Save before rerunning the cell or leaving the runtime: unsaved browser form edits
+are not durable. Saved decisions do not automatically prefill a new form or change
+the training gates. Both training flags remain False even if every decision is
+Confirmed. Decisions are attributed human submissions, not automatically verified
+labels or proof of independent incidents.
+
+Drive saving uses a callback in the live authorized Colab runtime. Opening the
+saved HTML outside that runtime cannot save to Drive. If the callback or codec
+fails, the form reports the problem; do not treat an error as a successful save or
+an unplayable video as watched. The existing original-video export can be used
+with a compatible player. The report contains embedded original video bytes,
+subject to existing per-file/total bounds, with no transcoding.
