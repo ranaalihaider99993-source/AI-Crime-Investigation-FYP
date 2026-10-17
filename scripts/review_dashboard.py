@@ -116,10 +116,15 @@ def consolidate_review(context_directory):
                 limitations='This dashboard reads metadata, hashes and saved heuristic findings; it has not watched or understood crime content. No semantic video-analysis method is implemented. All labels and incident independence require human verification. Context is not training data.')
 
 
-def write_dashboard(context_directory, interactive=False, resume=False):
+def write_dashboard(context_directory, interactive=False, resume=False, analyze=False):
     report = consolidate_review(context_directory)
     output = Path(context_directory)/('dashboard-'+uuid.uuid4().hex[:12])
     output.mkdir(exist_ok=False)
+    if analyze:
+        from scripts.context_analysis import analyze_context
+        plan=context_plan(json.loads((Path(context_directory)/'context_metadata.json').read_text())['validation_path'])
+        report['automatic_analysis']=analyze_context(plan,output/'automatic_analysis')
+        report['automatic_analysis_dir']=str(output/'automatic_analysis')
     (output/'review_report.json').write_text(json.dumps(report,indent=2))
     with (output/'review_report.csv').open('w',newline='') as f:
         writer = csv.DictWriter(f,fieldnames=list(report['rows'][0]))
@@ -137,6 +142,9 @@ def write_dashboard(context_directory, interactive=False, resume=False):
              '<h2>User observation: source 056</h2><pre>'+escape(json.dumps(report['observation_056'],indent=2))+'</pre>',
              '<h2>Pair findings (not verified incidents)</h2><pre>'+escape(json.dumps(report['pairs'],indent=2))+'</pre>',
              '<p>Edit human_checklist.csv in the parent context folder, then rerun the dashboard cell. Previous dashboards and checklist notes are preserved.</p>']
+    if analyze:
+        evidence=report['automatic_analysis']
+        parts.append('<h2>OpenCV automatic technical review: '+escape(evidence['technical_status'])+'</h2><p>'+escape(evidence['limitations'])+'</p><pre>'+escape(json.dumps(evidence['priorities'],indent=2))+'</pre>')
     for row in report['rows']:
         parts.append('<section><h2>'+escape(row['source'])+' · '+escape(row['label'])+' · '+escape(row['split'])+'</h2><table>')
         parts.extend('<tr><th>'+escape(k)+'</th><td><pre>'+escape(v)+'</pre></td></tr>' for k,v in row.items() if k not in {'source','label','split'})

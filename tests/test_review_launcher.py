@@ -84,7 +84,7 @@ def test_launcher_uses_existing_snapshot_only(selected,tmp_path,monkeypatch):
     monkeypatch.setattr(review_dashboard,'write_dashboard',lambda folder,**kw: calls.append((folder,kw)) or folder/'dashboard-test')
     chosen,dashboard=launch_saved_review(tmp_path)
     assert chosen==directory
-    assert calls==[(directory,dict(interactive=True,resume=True))]
+    assert calls==[(directory,dict(interactive=True,resume=True,analyze=True))]
 
 
 def test_one_cell_launcher_is_first_code_and_disables_training():

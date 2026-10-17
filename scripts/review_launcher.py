@@ -84,7 +84,7 @@ def launch_saved_review(output, explicit=None):
     try:
         directory=choose_context(output,explicit)
         print('Existing review folder:',directory)
-        dashboard=write_dashboard(directory,interactive=True,resume=True)
+        dashboard=write_dashboard(directory,interactive=True,resume=True,analyze=True)
     except (ValueError,FileNotFoundError,KeyError,OSError) as exc:
         raise RuntimeError(recovery_message(directory or output,exc)) from exc
     print('Dashboard:',dashboard/'review_dashboard.html')

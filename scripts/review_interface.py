@@ -1,4 +1,5 @@
 """Explicit human decisions for verified review snapshots; never a training gate."""
+import base64
 import csv
 import html
 import json
@@ -63,15 +64,34 @@ def render_review_interface(report, plan, callback_name=None, initial=None, rest
     if restored_from:
         parts.append('<p>Restored explicit human answers from: <code>'+esc(restored_from)+'</code></p>')
     parts.append('<div data-summary role="status"></div>')
-    for group in plan['groups']:
+    analysis=report.get('automatic_analysis')
+    groups=plan['groups']
+    if analysis:
+        order={p['source']:i for i,p in enumerate(analysis['priorities'])}
+        groups=sorted(groups,key=lambda g:order[g['source']])
+        parts.append('<h3>OpenCV technical evidence: '+esc(analysis['technical_status'])+'</h3><p>'+esc(analysis['limitations'])+'</p><p>Cards are ordered by technical risk, cross-split suspicion and warning counts; this is not crime confidence. Human decisions remain independent of these scores.</p>')
+    for group in groups:
         row=rows[group['source']]
         answer=initial.get(group['source'],{})
         low_motion=any(c.get('reported_low_motion') for c in group['videos']) or any(s in row['flags'].lower() for s in ['little change','low motion','static view'])
+        if analysis:
+            low_motion = low_motion or any(r['source']==group['source'] and r['metrics'].get('adjacent_frame_mae') is not None and r['metrics']['adjacent_frame_mae']<analysis['parameters']['low_motion_mae'] for r in analysis['clips'])
         priority=group['label']=='Fighting' or (group['label']=='Vandalism' and low_motion)
         parts.append(f'<section data-review-source="{esc(group["source"])}" style="border:3px solid {"#b03000" if priority else "#aaa"};padding:12px;margin:16px 0">')
         if priority:
             parts.append('<strong>CLOSER INSPECTION: '+('Fighting — few independent sources' if group['label']=='Fighting' else 'Low-motion Vandalism — label evidence may be unclear')+'</strong>')
         parts.append('<p>'+esc(row['flags'])+'</p><p>'+esc(row['possible_cross_split_overlap'])+'</p>')
+        if analysis:
+            source_records=[r for r in analysis['clips'] if r['source']==group['source']]
+            related=[p for p in analysis['pairs'] if group['source'] in (p['left_source'],p['right_source']) and p['kind'] in {'EXACT_BYTES','POSSIBLE_SHARED_SCENE_UNCERTAIN'}]
+            parts.append('<details open><summary>Automatic evidence and contact sheets — no semantic approval</summary>')
+            for record in source_records:
+                parts.append('<h4>'+esc(record['role'])+' · '+esc(record['filename'])+' · '+esc(record['technical_status'])+'</h4>')
+                if record['contact_sheet']:
+                    sheet=Path(report['automatic_analysis_dir'])/record['contact_sheet']
+                    parts.append('<img alt="Temporal contact sheet" style="max-width:100%" src="data:image/jpeg;base64,'+base64.b64encode(sheet.read_bytes()).decode()+'">')
+                parts.append('<pre>'+esc(json.dumps(dict(checks=record['checks'],metrics=record['metrics'],sampling=record.get('sampling')),indent=2))+'</pre>')
+            parts.append('<p>Suspicious cross-source relationships (all roles, not just selected clips):</p><pre>'+esc(json.dumps(related,indent=2))+'</pre></details>')
         # The existing player checks containment and content hashes immediately before embedding.
         parts.extend(context_players(dict(plan,groups=[group])))
         for field,label in [('label_visible','Crime label visible in SELECTED clip itself'),('videos_watched','All available videos in this source group watched'),('incident_independence','Incident independent of the OTHER selected sources')]:

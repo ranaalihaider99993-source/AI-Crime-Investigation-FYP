@@ -334,3 +334,36 @@ Validation: **82 pytest tests passed**, including compatibility with prior
 explicit answers, source/status summaries, live edits, unsaved-change notices and
 a simulated versioned save receipt. This used generated video fixtures and a
 simulated Colab callback, with no access to the user's Google Colab or Drive.
+
+### Deterministic selected-plus-context OpenCV analysis
+
+The existing single launcher now enables a new additive analysis snapshot under
+its new dashboard output folder. It checks only the preserved 12-source candidate
+and available nearest context clips. Existing temporal sampling, fingerprints,
+one-to-one scene comparison and contact-sheet rendering are reused. Added metrics
+include adjacent-frame MAE/changed-pixel fraction, fixed-resolution Farneback flow,
+long-gap differences, brightness/exposure fractions, Laplacian sharpness and texture.
+Version, thresholds, sample indices, timestamps, partial-coverage caveats, per-check
+statuses and priority reasons are saved. This is bounded deterministic technical
+analysis, not semantic video understanding or a calibrated incident classifier.
+
+Exact verified byte duplicates across distinct sources produce FAIL; uncertain
+scene resemblance produces WARNING and identifies cross-split relationships.
+Missing/failed decode and changed-content failures remain distinct from motion or
+quality warnings. No-match PASS never means incident independence. Context remains
+context-only. Contact sheets, pair CSV, clip CSV and queue JSON/CSV are new snapshots;
+inputs and prior outputs remain untouched. New automatic fields remain PENDING;
+prior explicitly saved human answers are neither reclassified nor invalidated by
+these additive technical outputs. Both training flags remain unchanged/disabled.
+
+Regression tests exercise static versus changing generated footage, quality/motion
+thresholds, bounded unknown-length coverage, analysis of context roles, repeatable
+metrics, exact-byte and visual cross-split evidence, decode/hash failures and export
+of mixed failure/success records. Dashboard integration verifies contact-sheet
+embedding and preserves previous checklist bytes, candidate bytes and resumable
+human decision snapshots. No real DCSASS or Colab/Drive execution is claimed locally.
+
+Validation for this change: **88 pytest tests passed**. A local Chromium fixture
+also verified embedded contact sheets/original players, preserved explicit human
+answers, live summary edits and a simulated save receipt. No actual Colab runtime,
+Google Drive access or real DCSASS analysis was performed in this workspace.

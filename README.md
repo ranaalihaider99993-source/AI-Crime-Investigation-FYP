@@ -11,7 +11,7 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
 ## Resume an existing review in one Colab cell
 
 Open [Notebook 02](https://colab.research.google.com/github/ranaalihaider99993-source/AI-Crime-Investigation-FYP/blob/main/notebooks/02_Crime_Classification_Training.ipynb)
-and run its **first code cell: Launch saved review dashboard**
+and run its **first code cell: Launch OpenCV-assisted saved review**
 (`launch-saved-review-dashboard`). Authorize Drive when prompted, review the
 videos, then click **Save review decisions to Google Drive** and wait for the
 saved path. CPU is sufficient. Do not Run all or run any other setup/preparation
@@ -552,3 +552,54 @@ fails, the form reports the problem; do not treat an error as a successful save 
 an unplayable video as watched. The existing original-video export can be used
 with a compatible player. The report contains embedded original video bytes,
 subject to existing per-file/total bounds, with no transcoding.
+
+### Automatic OpenCV-assisted review (same single launcher cell)
+
+The first Notebook 02 cell now analyzes all 12 selected clips and available
+preceding/following context (at most 36 videos) before opening the dashboard.
+No pretrained weights, learned models, external inference APIs or training are used.
+It reuses the existing canonical paths, source split and saved human annotations.
+Both training approval flags remain unchanged at their disabled defaults.
+
+For each original video, the analyzer takes up to 12 evenly spaced temporal samples
+and adjacent-frame pairs at those positions. It reports adjacent-frame mean absolute
+pixel difference, changed-pixel fraction (>10 gray levels), median Farneback flow
+in pixels/frame at 160×90, longer-gap sampled frame difference, brightness/dark/bright
+fractions, grayscale texture and Laplacian sharpness variance. Unknown length gets
+an explicitly bounded prefix and WARNING; this is not a full decode or event detector.
+Contact sheets retain frame indices and timestamps where reported by the decoder.
+
+Every cross-source clip pair, including context, is checked for SHA-256 equality
+and uncertain scene resemblance using the existing one-to-one dHash/grayscale-MAE
+matches. The report also includes grayscale-histogram Bhattacharyya distance as a
+background appearance cue, not an incident classifier. Same-source neighbors are
+not treated as independent sources or added to training. Cross-split findings
+identify the roles and source/split IDs for investigation.
+
+Technical status meanings:
+
+- **PASS**: the named technical check passed, or no configured threshold was hit;
+  it does not establish a crime label or incident independence.
+- **WARNING**: limited sampling, low motion/quality or uncertain shared-scene evidence.
+- **FAIL**: integrity/decode failure or exact video bytes shared across distinct sources.
+
+Thresholds are recorded in `analysis.json`: low adjacent change <1 gray level,
+sharpness variance <30, texture std <12, dark/bright fractions >0.8, and native
+resolution below 160×90. Scene matches use dHash Hamming ≤6 and gray MAE ≤12 for
+textured samples, at least 3 one-to-one matches and ≥50% of the smaller sample set.
+These are transparent heuristics, not calibrated crime-label/incident accuracy.
+Camera motion, exposure, compression, static scenes and common backgrounds can
+mislead them. Sparse samples can miss events; no warnings does not prove independence.
+
+Every launcher run creates a fresh `dashboard-<id>/automatic_analysis/` containing
+`analysis.json`, `clips.csv`, `pairs.csv`, `priority_queue.csv` and contact-sheet JPEGs.
+The consolidated HTML embeds these alongside original players and editable controls.
+Cards are ordered by technical severity, cross-split suspicion, warning count and
+Fighting scarcity; the score is review priority, not crime confidence. Low-motion
+Vandalism is highlighted as well. All automatic semantic/independence fields stay
+PENDING. Prior explicitly saved human answers may be restored with attribution,
+without granting new approval. New technical outputs never overwrite old reports,
+checklists or decisions, and do not invalidate otherwise matching human snapshots.
+
+Real DCSASS analysis is performed only when you run the launcher in your authorized
+Colab/Drive session. Local generated-video tests are not real dataset findings.
