@@ -453,3 +453,34 @@ bounded to its original 12 clips. Context videos are played without transcoding,
 not copied into that ZIP or added to training. Inline playback has a 128 MiB total
 and 64 MiB per-file bound. Browser codec support may vary.
 Both `SOURCE_MAPPING_REVIEWED` and `RUN_PROTOTYPE_TRAINING` remain False.
+
+### Consolidate existing human-review notes
+
+In the latest Notebook 02, run **setup/Drive mount (`cell-1`)**, then
+**Consolidated review dashboard (`consolidated-review-dashboard`)**. Do not rerun
+preparation or context generation just to consolidate an existing checklist.
+The cell uses the current session's context folder or prints/selects the newest
+saved context metadata folder. Set `CONTEXT_DIRECTORY` to a specific review folder
+if your notes are in an older one. Dataset files must still match the saved hashes.
+
+Edit `notes` / `review_notes`, label-review answers, and `possible_related_sources`
+in that folder's `human_checklist.csv`; rerun the dashboard to consolidate them.
+Use full canonical source IDs for automatic cross-split links from the checklist;
+short numeric/free-text references remain for manual investigation. No checklist
+answer enables training or automatically approves semantic labels/independence.
+
+A new `dashboard-<id>/` folder beside the checklist contains `review_dashboard.html`,
+`review_report.csv`, and `review_report.json`. The HTML displays grouped filenames,
+roles/order caveats, source/class/split, warnings, attributed notes, and pair findings.
+It imports existing temporal heuristics if available; it does not run semantic
+video analysis or infer crime labels. Exact-byte duplicates are technical evidence,
+while scene similarity and reported relationships need human investigation.
+Missing findings never establish incident independence. Original videos remain in
+the existing context playback cell, with no new dataset or candidate modifications.
+
+The user's observation for source **056** is included verbatim and attributed as
+unverified. It is associated with a source only when that numeric ID is unique in
+the selection; absent/ambiguous IDs stay unresolved in the dashboard. Existing
+checklists/notes and prior dashboard snapshots are preserved. Both training flags
+remain False. Generating real Drive reports requires running the cell in your
+Drive-authorized Colab session; local tests are generated-video fixtures only.

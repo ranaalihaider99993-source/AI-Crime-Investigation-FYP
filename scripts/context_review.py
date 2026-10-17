@@ -86,7 +86,7 @@ def save_context_review(plan, output):
     directory.mkdir(parents=True, exist_ok=False)
     (directory/'context_metadata.json').write_text(json.dumps(plan, indent=2))
     fields = ['source','label','split','selected_clip','context_clips','warnings','watched_all','selected_label_visible',
-              'label_visible_only_in_context','possible_related_sources','incident_independence','reviewer','notes']
+              'label_visible_only_in_context','possible_related_sources','incident_independence','reviewer','notes','review_notes']
     with (directory/'human_checklist.csv').open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fields)
         writer.writeheader()

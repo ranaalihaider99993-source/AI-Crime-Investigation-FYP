@@ -268,3 +268,19 @@ stale inspection artifacts, altered video content and symlink escapes. The actua
 notebook context cell also runs against the duplicated-root test fixture with both
 training flags False. These are local generated-video tests, not real DCSASS review
 or Colab execution. Semantic labels and incident independence remain unverified.
+
+### Consolidated review dashboard
+
+The dashboard reads existing context metadata and the human checklist, revalidates
+saved candidate/context/inspection identities and video hashes, and imports only
+matching temporal-review evidence. It does not regenerate the candidate or perform
+semantic inference. Reports keep approval PENDING irrespective of checklist answers.
+Exact full source references in checklist relationships receive attributed cross-split
+links; ambiguous references require human investigation. Source 056's supplied
+observation remains user-reported and unresolved when not uniquely identifiable.
+HTML is escaped; spreadsheet formula prefixes in CSV are neutralized. Input checksums
+are retained in report JSON. Every output is a new snapshot; inputs stay untouched.
+Regression coverage includes notes preservation, low-motion flags, identity tampering,
+ambiguous source 056, HTML escaping, existing temporal cross-split findings, stale
+evidence rejection, and actual default notebook-cell execution with training disabled.
+These checks do not constitute actual DCSASS human review or Colab execution.
