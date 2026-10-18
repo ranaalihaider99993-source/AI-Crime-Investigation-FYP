@@ -7,6 +7,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import RequestEntityTooLarge
 from scripts.inference import InferenceEngine, WARNING
+from scripts.image_analysis import analyze_images, MAX_BYTES
 
 ROOT=Path(__file__).resolve().parents[1]
 DEFAULT_CHECKPOINT=ROOT/'models'/'experimental_cnn.pth'
@@ -22,7 +23,7 @@ def create_app(checkpoint=None):
     def headers(response):
         response.headers['Cache-Control']='no-store'
         response.headers['X-Content-Type-Options']='nosniff'
-        response.headers['Content-Security-Policy']="default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        response.headers['Content-Security-Policy']="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
         return response
 
     @app.get('/')
@@ -48,6 +49,16 @@ def create_app(checkpoint=None):
         except (ValueError,RuntimeError,cv2.error) as exc:
             app.logger.info('Video inference rejected: %s',exc)
             return jsonify(error='Unable to decode this video. Try a readable MP4 or AVI file.',warning=WARNING),422
+
+    @app.post('/api/images/analyze')
+    def images():
+        uploads = request.files.getlist('images')
+        if not 1 <= len(uploads) <= 6:
+            return jsonify(error='Choose between 1 and 6 images.'),400
+        try:
+            return jsonify(analyze_images([item.stream.read(MAX_BYTES + 1) for item in uploads]))
+        except ValueError as error:
+            return jsonify(error=str(error)),422
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(error):return jsonify(error='Video exceeds the 64 MB upload limit.',warning=WARNING),413

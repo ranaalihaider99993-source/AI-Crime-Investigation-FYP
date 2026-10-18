@@ -20,5 +20,16 @@
 </section>
 </div>
 <details class="model-details"><summary>Model and preprocessing specification <span>View verified configuration +</span></summary><div class="spec-grid"><div><h4>Saved experimental CNN</h4><p id="architecture"></p><p id="checkpoint"></p></div><div><h4>Identical frame pipeline</h4><p>3 uniform frame indices → OpenCV linear resize → RGB 64 × 64 → CHW float32 / 255.</p><p>Frame logits are averaged before softmax. Audio is not analyzed.</p></div><div><h4>Interpretation limits</h4><p>Burglary · Stealing · Fighting · Vandalism, in checkpoint order.</p><p>No validated accuracy claim, incident determination, or generated crime scenario.</p></div></div></details>
+<section class="panel image-section" aria-labelledby="image-heading">
+<div class="eyebrow">IMAGE EVIDENCE / 02</div><h2 id="image-heading">Image inspection &amp; experimental scenario brief</h2>
+<p class="result-warning">UNVALIDATED EXPERIMENTAL — image understanding unavailable</p>
+<p>This separate workflow checks image files and creates a technical evidence brief. It does not recognize objects, actions or crimes. The video CNN is not used for images.</p>
+<label for="image-files">Choose 1–6 JPEG, PNG or WebP images; up to 8 MB and 16 million pixels each.</label>
+<input id="image-files" type="file" multiple accept="image/jpeg,image/png,image/webp">
+<div id="image-previews" class="image-previews"></div><button id="analyze-images" type="button" disabled>Inspect images &amp; generate evidence brief</button>
+<p id="image-status" role="status" aria-live="polite"></p><p id="image-error" role="alert" hidden></p>
+<div id="image-results" hidden><h3>Experimental evidence brief</h3><p>Deterministic template, not AI scene understanding. No calibrated confidence scores are available.</p><div id="image-brief"></div><details><summary>Image provenance and preprocessing</summary><div id="image-provenance"></div></details></div>
+<p class="privacy">Processed locally in memory; uploads are not saved. Human review decisions remain unchanged.</p>
+</section><script src="/static/images.js" defer></script>
 <footer><span>CrimeScope AI · Final Year Project</span><span>Experimental evidence, presented honestly.</span></footer>
 </main></body></html>
