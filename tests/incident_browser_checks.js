@@ -9,6 +9,7 @@ async (page) => {
   };
   const checks = [];
   const assert = (condition,message) => {if (!condition) throw new Error(message);};
+  assert(page.viewportSize()===null,'Start this responsive check using tools/playwright-native.json');
   async function bottom(stage,viewport,mode) {
     await page.mouse.move(viewport.width/2,viewport.height/2);
     await page.mouse.wheel(0,100000);
@@ -28,6 +29,7 @@ async (page) => {
     assert(result.nestedScrollers===0,`${stage}/${mode}: nested scrolling/clipping`);
     checks.push({viewport:`${viewport.width}x${viewport.height}`,mode,stage,...result});
   }
+  try {
   for (const viewport of [{width:1280,height:720},{width:390,height:844}]) {
     await page.setViewportSize(viewport);
     for (const [mode,files] of Object.entries(cases)) {
@@ -54,4 +56,11 @@ async (page) => {
     }
   }
   return {passed:true,checks};
+  } finally {
+    // A new page inherits viewport:null from the context. A resized test page
+    // otherwise keeps its virtual size and can clip the user's native window.
+    const nativePage=await page.context().newPage();
+    await nativePage.goto('http://127.0.0.1:8000/');
+    await page.close();
+  }
 }
