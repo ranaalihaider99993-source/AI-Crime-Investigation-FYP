@@ -1,5 +1,13 @@
 # Shared image/video scenario pipeline
 
+**2026-10-18 experimental update:** image uploads now execute a separate pinned
+weak-video-label four-class CNN when its checkpoint is installed. This is not a
+trained attribute/action model. Shared narratives still abstain from scene and
+crime claims. Actual training/evaluation limits and Drive checkpoint location
+are recorded in `reports/experimental_image_training.md`. Earlier descriptions
+of absent image checkpoints below refer to the reviewed semantic model, which
+remains unavailable.
+
 ## Actual capabilities
 
 Both API outputs now expose the same `narrative` schema and both website sections

@@ -1,5 +1,13 @@
 # Image evidence prototype
 
+**Current update (2026-10-18):** a separate randomly initialized four-class
+weak-video-label image CNN has now been trained on T4 and integrated. It is not
+the reviewed attribute model proposed below. It retained only 14 frames across
+nine sources, predicted Burglary for every held-out frame, and did not beat the
+majority baseline. See `reports/experimental_image_training.md`. The initial
+technical-only foundation and reviewed attribute-data requirements below remain
+relevant; the weak classifier supplies no validated scene observations.
+
 The image workflow is separate from video inference. No trained semantic image
 checkpoint or verified image-level annotations were found in this repository.
 The saved four-class video CNN is not an image evidence model. Synthetic scenario

@@ -1,0 +1,199 @@
+{
+  "status": "completed",
+  "output": "/content/drive/MyDrive/AI-Crime-Investigation-FYP/canonical-four-class-v2/experimental_image_cnn/20261018T094503Z-bb078083",
+  "counts": {
+    "train": {
+      "frames": 5,
+      "sources": 4,
+      "classes": {
+        "Burglary": 2,
+        "Fighting": 1,
+        "Stealing": 1,
+        "Vandalism": 1
+      }
+    },
+    "val": {
+      "frames": 3,
+      "sources": 3,
+      "classes": {
+        "Burglary": 1,
+        "Stealing": 1,
+        "Vandalism": 1
+      }
+    },
+    "test": {
+      "frames": 6,
+      "sources": 2,
+      "classes": {
+        "Burglary": 5,
+        "Fighting": 1
+      }
+    }
+  },
+  "checkpoint_sha256": "e95b7ebf04510e78bbbde4e7716408cbdd1666291a7406ed42dcf26878e647a8",
+  "metrics": {
+    "frame": {
+      "accuracy": 0.8333333333333334,
+      "macro_f1": 0.22727272727272727,
+      "confusion_matrix": [
+        [
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "per_class": {
+        "Burglary": {
+          "precision": 0.8333333333333334,
+          "recall": 1.0,
+          "f1": 0.9090909090909091,
+          "support": 5
+        },
+        "Stealing": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "Fighting": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 1
+        },
+        "Vandalism": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "unsupported_classes": [
+        "Stealing",
+        "Vandalism"
+      ],
+      "predictions": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "source": {
+      "accuracy": 0.5,
+      "macro_f1": 0.16666666666666666,
+      "confusion_matrix": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "per_class": {
+        "Burglary": {
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6666666666666666,
+          "support": 1
+        },
+        "Stealing": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "Fighting": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 1
+        },
+        "Vandalism": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "unsupported_classes": [
+        "Stealing",
+        "Vandalism"
+      ],
+      "predictions": [
+        0,
+        0
+      ]
+    },
+    "source_order": [
+      "burglary046_x264",
+      "fighting002_x264"
+    ],
+    "test_loss": 1.25882089138031,
+    "selected_epoch": 5,
+    "device": "Tesla T4",
+    "warning": "UNVALIDATED weak video-derived labels; source-disjoint is not verified incident independence"
+  },
+  "removed_frames": 58,
+  "validated": false,
+  "human_files_unchanged": true,
+  "interpretation": {
+    "all_test_predictions": "Burglary",
+    "majority_baseline_frame_accuracy": 0.8333333333333334,
+    "majority_baseline_source_accuracy": 0.5,
+    "outperforms_majority_baseline": false,
+    "human_labels": {
+      "Confirmed": 2,
+      "Uncertain": 7,
+      "Rejected_excluded": 3
+    },
+    "incident_independence": "All saved answers remain Pending; not verified",
+    "canonical_dataset_unique_clips": 16639,
+    "physical_video_copies": 33278,
+    "sampled_frames_before_deduplication": 72,
+    "frames_are_not_independent_samples": true,
+    "production_flags": false,
+    "training_implementation_sha256": "fa398edff76a0ff9fed19ef600862ab09753647642e09a842aa204bd393cf5c8",
+    "decisions_sha256": "07520c220d69c3098cc808af46298981224123b8c4ea19f28ca0c4d651644f8b",
+    "canonical_split_signature": "40575d3ad12b10d0749f3da1ab693a1333e48bd916f09f0cc70c20f338361e98"
+  }
+}

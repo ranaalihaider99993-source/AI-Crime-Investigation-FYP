@@ -40,13 +40,17 @@ def inspect_image(data, index):
                 bytes=len(data), width=width, height=height, preview=preview)
 
 
-def analyze_images(payloads):
+def analyze_images(payloads, engine=None):
     if not 1 <= len(payloads) <= MAX_IMAGES:
         raise ValueError('Choose between 1 and 6 images.')
     images = [inspect_image(data, i + 1) for i, data in enumerate(payloads)]
+    if engine is not None:
+        for image,data in zip(images,payloads):
+            image['experimental_classification'] = engine.predict(data)
     narrative = build_narrative('images', [dict(id=item['image_id'], description=
         f"Decoded still image: {item['width']} × {item['height']} pixels; SHA-256 {item['sha256']}.") for item in images])
-    return dict(warning=WARNING, semantic_model_available=False, images=images, narrative=narrative,
+    return dict(warning=(engine.metadata['warning'] if engine is not None else WARNING),
+                image_model_available=engine is not None, semantic_model_available=False, images=images, narrative=narrative,
                 preprocessing='EXIF orientation → RGB → bilinear aspect-preserving black pad 128×128; future tensor CHW float32 /255.',
                 scenario=dict(
                     title='Experimental evidence brief — not a crime reconstruction',

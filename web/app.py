@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import RequestEntityTooLarge
 from scripts.inference import InferenceEngine, WARNING
 from scripts.image_analysis import analyze_images, MAX_BYTES
+from scripts.image_inference import ImageInferenceEngine
 
 ROOT=Path(__file__).resolve().parents[1]
 DEFAULT_CHECKPOINT=ROOT/'models'/'experimental_cnn.pth'
@@ -18,6 +19,12 @@ def create_app(checkpoint=None):
     app.config['MAX_CONTENT_LENGTH']=64*1024**2
     engine=InferenceEngine(checkpoint or os.environ.get('CRIMESCOPE_CHECKPOINT',DEFAULT_CHECKPOINT))
     app.extensions['inference_engine']=engine
+    image_path=ROOT/'models'/'experimental_image_cnn.pth'
+    image_engine=None
+    if image_path.exists():
+        try: image_engine=ImageInferenceEngine(image_path)
+        except (ValueError,RuntimeError,KeyError) as error: app.logger.warning('Image model disabled: %s',error)
+    app.extensions['image_inference_engine']=image_engine
 
     @app.after_request
     def headers(response):
@@ -31,6 +38,10 @@ def create_app(checkpoint=None):
 
     @app.get('/api/model')
     def metadata():return jsonify(engine.metadata)
+
+    @app.get('/api/images/model')
+    def image_metadata():
+        return jsonify(available=image_engine is not None, model=image_engine.metadata if image_engine else None)
 
     @app.post('/api/predict')
     def predict():
@@ -56,7 +67,7 @@ def create_app(checkpoint=None):
         if not 1 <= len(uploads) <= 6:
             return jsonify(error='Choose between 1 and 6 images.'),400
         try:
-            return jsonify(analyze_images([item.stream.read(MAX_BYTES + 1) for item in uploads]))
+            return jsonify(analyze_images([item.stream.read(MAX_BYTES + 1) for item in uploads],image_engine))
         except ValueError as error:
             return jsonify(error=str(error)),422
 
