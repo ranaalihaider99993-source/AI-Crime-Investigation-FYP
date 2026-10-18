@@ -49,10 +49,31 @@ It does not determine incidents or identify people. Its training included seven
 Uncertain labels by explicit authorization; three Rejected clips were excluded.
 The two-clip experimental evaluation is not validated accuracy.
 
+## Experimental result display
+
+Only the highest-scoring category and its relative score are prominent by default.
+The native **View all model scores** disclosure starts closed and exposes all four
+scores, including the other three categories, when expanded. It closes again for
+each new result.
+
+The UI labels a result **Inconclusive / Low confidence** if **either** the top
+softmax score is below **0.50 (50%)**, **or** the top-minus-runner-up margin is below
+**0.10 (10 percentage points)**. Equality at either boundary passes that boundary;
+both conditions must pass for the top category to be the main heading. Inconclusive
+results still identify the highest-scoring category as secondary information.
+
+These are conservative, display-only experimental cutoffs chosen to flag weak or
+closely matched outputs. They have not been calibrated or validated against a
+representative labeled dataset. Passing them does not establish confidence in a
+crime, improve model accuracy, or confirm an incident. Percentages are relative
+model scores, not true probabilities of crime. Raw backend outputs, CNN weights,
+preprocessing and human review gates are unchanged.
+
 ## Verification
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q tests/test_inference.py tests/test_models.py
+node --test tests/test_score_policy.cjs
 ```
 
 Tests verify original preprocessing parity, logit aggregation, checkpoint checks,
