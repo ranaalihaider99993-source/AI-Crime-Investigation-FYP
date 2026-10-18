@@ -59,6 +59,26 @@ the correction merely to resume. Neither training flag changes.
 
 ## Initial dataset/training preparation in Google Colab
 
+### Persistent dataset backup and isolated experiments
+
+After complete version-1 recovery, Notebook 02 offers a separate opt-in persistent
+backup cell. It checks actual Google Drive quota, stores the complete physical
+dataset layout in a new `canonical-four-class-v2/dataset_backups/<id>/` archive,
+and saves SHA-256 and provenance. The saved-review launcher automatically restores
+a matching published archive when runtime data is missing, then rechecks every
+saved canonical identity, duplicate-copy count and video hash. It never downloads
+from Kaggle automatically. Fresh sessions still need Drive authorization and local
+space to extract the archive. No original manifest, split or decision is replaced.
+
+The separate experimental CNN entrypoint requires explicit authorization and a T4.
+It keeps production flags False, uses random weights for two epochs, filters the
+existing selection without replacing sources, and saves checkpoint, configuration,
+logs and exploratory metrics under `experimental_cnn_smoke/`. By default it requires
+saved Confirmed labels and watched videos. Including Uncertain dataset labels
+requires a separate explicit opt-in; such results are UNVALIDATED pipeline evidence.
+Rejected, Pending and unwatched examples are always excluded. Incident independence
+is never granted by code, and this experiment does not claim validated performance.
+
 The steps below are for initial preparation, not resuming an existing review.
 
 1. Ensure this commit is pushed to the existing GitHub repository (a local commit alone is not visible to Colab).

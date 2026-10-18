@@ -87,7 +87,15 @@ def launch_saved_review(output, explicit=None, *, dataset_root=None):
         directory=choose_context(output,explicit)
         print('Existing review folder:',directory)
         from scripts.review_paths import ensure_review_dataset
-        ensure_review_dataset(directory,dataset_root)
+        try:
+            ensure_review_dataset(directory,dataset_root)
+        except FileNotFoundError:
+            # A published Drive backup may restore runtime files; never fetch Kaggle.
+            from scripts.dataset_backup import restore_backup
+            restored = restore_backup(directory)
+            if restored is None:
+                raise
+            ensure_review_dataset(directory, restored)
         dashboard=write_dashboard(directory,interactive=True,resume=True,analyze=True)
     except (ValueError,FileNotFoundError,KeyError,OSError) as exc:
         raise RuntimeError(recovery_message(directory or output,exc)) from exc
