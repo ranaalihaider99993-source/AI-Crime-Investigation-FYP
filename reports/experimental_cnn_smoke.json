@@ -1,0 +1,37 @@
+{
+  "status": "completed_and_readback_verified",
+  "experiment": "UNVALIDATED CNN EXECUTION SMOKE",
+  "run": "experimental_cnn_smoke/20261018T052957Z-84209c36",
+  "training_code_commit": "d51cd1124b1a4e7e7a8f72a17a69a1a08acf96a7",
+  "device": "Tesla T4",
+  "random_initialization": true,
+  "pretrained_weights": false,
+  "external_ai_apis": false,
+  "epochs_executed": 2,
+  "checkpoint_epoch": 1,
+  "checkpoint": "experimental_cnn.pth",
+  "checkpoint_sha256": "a31794fd43f0a736d63702806a0c838af266b3536867a65da4cd74b4082b5ab6",
+  "class_order": ["Burglary", "Stealing", "Fighting", "Vandalism"],
+  "split_counts": {
+    "train": {"Burglary": 1, "Stealing": 1, "Fighting": 1, "Vandalism": 1},
+    "val": {"Burglary": 1, "Stealing": 1, "Fighting": 0, "Vandalism": 1},
+    "test": {"Burglary": 1, "Stealing": 0, "Fighting": 1, "Vandalism": 0}
+  },
+  "test_metrics": {
+    "loss": 1.399735927581787,
+    "accuracy": 0.5,
+    "precision": 0.125,
+    "recall": 0.25,
+    "macro_f1": 0.16666666666666666,
+    "confusion_matrix": [[1,0,0,0], [0,0,0,0], [1,0,0,0], [0,0,0,0]]
+  },
+  "included_human_labels": {"Confirmed": 2, "Uncertain": 7},
+  "excluded_rejected_sources": ["stealing002_x264", "fighting005_x264", "vandalism043_x264"],
+  "validated_performance": false,
+  "incident_independence": "UNVERIFIED; all 12 human answers remain Pending",
+  "canonical_split_unchanged": true,
+  "human_decisions_unchanged": true,
+  "production_source_mapping_reviewed": false,
+  "production_run_prototype_training": false,
+  "limitation": "Two test clips, two supported classes, uncertain dataset labels and unverified incidents; execution evidence only. Full artifacts are in Drive."
+}
