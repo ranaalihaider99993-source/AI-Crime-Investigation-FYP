@@ -46,4 +46,4 @@ def test_image_endpoint(monkeypatch):
     assert len(response.json['images']) == 2
     assert client.post('/api/images/analyze').status_code == 400
     assert client.post('/api/images/analyze', data={'images': (io.BytesIO(b'bad'), 'a.png')}).status_code == 422
-    assert b'Upload video' in client.get('/').data
+    assert b'Upload video' in client.get('/individual').data

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CrimeScope AI · Incident analysis</title><link rel="icon" href="/static/favicon.svg"><link rel="stylesheet" href="/static/app.css"><script src="/static/incident.js" defer></script></head>
+<body><header><a class="brand" href="/">CS<span>CrimeScope <b>AI</b></span></a><span class="tag">RESEARCH PROTOTYPE</span></header><main>
+<div class="warning" role="note"><strong>UNVALIDATED EXPERIMENTAL</strong><span>Relative model scores are not crime probabilities or proof. These models cannot establish visible events.</span></div>
+<div class="intro"><div class="eyebrow">ONE INCIDENT · MULTIPLE FILES</div><h1>Upload evidence.<br><span>Compare possible categories.</span></h1><p>Select images and videos you believe belong together. Grouping them does not verify that they depict one incident.</p></div>
+<section class="panel" aria-labelledby="evidence-heading"><h2 id="evidence-heading">Incident evidence</h2>
+<label class="dropzone" id="incident-drop" for="incident-files"><span class="upload-icon" aria-hidden="true">↑</span><strong>Choose images and videos</strong><span>or drop them here</span><small>Up to 6 images + 3 videos · 60 MB total · 8 MB per image</small><input id="incident-files" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.mp4,.avi,.mov,.mkv,.webm" aria-label="Upload incident evidence"></label>
+<div id="incident-previews" class="image-previews"></div><button id="analyze-incident" type="button" disabled>Analyze Incident</button>
+<p class="privacy">Local CPU processing. Temporary uploads are removed after analysis. Selecting files replaces the current selection.</p><p id="incident-error" role="alert" hidden></p><p id="incident-progress" role="status" aria-live="polite"></p></section>
+<section id="incident-results" class="panel image-section" aria-labelledby="scenarios-heading" hidden>
+<div class="eyebrow">RANKED POSSIBLE SCENARIOS · CATEGORY HYPOTHESES ONLY</div><h2 id="scenarios-heading">Combined incident result</h2><p id="incident-status" class="result-warning"></p>
+<p>Three model-ranked alternatives, not a reconstruction of what happened. No actions, chronology, suspects or motives were established.</p><div id="incident-scenarios"></div>
+<p class="score-note">Uncalibrated relative percentage scores · not actual crime probabilities. Top 3 of 4 classes; displayed scores are not renormalized to 100%.</p>
+<p class="result-warning">A non-crime explanation remains possible. Neither checkpoint has a Normal/Unknown class.</p><ul id="incident-uncertainties"></ul>
+<details class="model-details" id="incident-advanced"><summary>Advanced Details</summary><div id="incident-technical"></div></details></section>
+<details class="model-details"><summary>Advanced Details · individual file tools</summary><p><a href="/individual">Open the existing individual video and image tools</a></p><p>Original endpoints, checkpoints and review decisions are preserved.</p></details>
+<footer><span>CrimeScope AI · Final Year Project</span><span>Experimental evidence, presented honestly.</span></footer></main></body></html>
