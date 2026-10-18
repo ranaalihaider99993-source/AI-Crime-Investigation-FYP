@@ -1,0 +1,80 @@
+{
+  "http_status": 200,
+  "sample": {
+    "sample_name": "Burglary046_x264_15.mp4",
+    "sample_sha256": "7806099ee66ab2c582c317ce7c88149b1c63fedb96bcee10b8a3a0198a26256a",
+    "source": "burglary046_x264",
+    "training_code_commit": "d51cd1124b1a4e7e7a8f72a17a69a1a08acf96a7"
+  },
+  "sample_bytes": 35759,
+  "sample_sha256": "7806099ee66ab2c582c317ce7c88149b1c63fedb96bcee10b8a3a0198a26256a",
+  "prediction": "Burglary",
+  "scores": [
+    {
+      "label": "Burglary",
+      "score": 0.264125794172287
+    },
+    {
+      "label": "Stealing",
+      "score": 0.2547009289264679
+    },
+    {
+      "label": "Fighting",
+      "score": 0.22981463372707367
+    },
+    {
+      "label": "Vandalism",
+      "score": 0.25135862827301025
+    }
+  ],
+  "preprocessing": {
+    "color": "RGB",
+    "duration_seconds": 2.0,
+    "frame_count": 60,
+    "sampled_indices": [
+      0,
+      29,
+      59
+    ],
+    "scale": "float32 / 255",
+    "size": [
+      64,
+      64
+    ],
+    "tensor_layout": "TCHW"
+  },
+  "model": {
+    "aggregation": "Average frame logits, then softmax",
+    "architecture": "CrimeCNN: Conv 3\u219216\u219232\u219264, adaptive average pooling, Linear 64\u21924",
+    "calibration": "Uncalibrated relative scores; no Normal/Unknown class",
+    "checkpoint_epoch": 1,
+    "checkpoint_sha256": "a31794fd43f0a736d63702806a0c838af266b3536867a65da4cd74b4082b5ab6",
+    "classes": [
+      "Burglary",
+      "Stealing",
+      "Fighting",
+      "Vandalism"
+    ],
+    "device": "CPU",
+    "preprocessing": "3 uniformly spaced frames; OpenCV linear resize 64\u00d764; BGR\u2192RGB; CHW float32 /255",
+    "validated": false,
+    "warning": "UNVALIDATED EXPERIMENTAL \u2014 model scores are not evidence of a crime."
+  },
+  "parameter_count": 23844,
+  "checkpoint_config": {
+    "seed": 42,
+    "epochs": 2,
+    "batch_size": 4,
+    "image_size": 64,
+    "frames_per_clip": 3,
+    "learning_rate": 0.001
+  },
+  "torch": "2.14.1+cpu",
+  "frame_sha256": [
+    "dae2449aa12efe706e4d782841d66336aa3fe1e918edc0777fa6a3ed1244cd24",
+    "85598c6e4963371a30d7ed9295adaa7f2ec018516c3c623702fd2a4eec096986",
+    "16551ea4ab1613f98e72a1ec17c6064e1ca7948517e420e547564985673ff129"
+  ],
+  "validated": false,
+  "warning": "UNVALIDATED EXPERIMENTAL \u2014 model scores are not evidence of a crime."
+}

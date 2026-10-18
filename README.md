@@ -10,6 +10,10 @@ There are no pretrained weights, external AI inference calls, or fabricated accu
 
 ## Resume an existing review in one Colab cell
 
+For the local video-upload inference prototype using the saved experimental CNN,
+see [web/README.md](web/README.md). It shows four uncalibrated class scores with a
+prominent UNVALIDATED EXPERIMENTAL warning, and never changes human review decisions.
+
 Open [Notebook 02](https://colab.research.google.com/github/ranaalihaider99993-source/AI-Crime-Investigation-FYP/blob/main/notebooks/02_Crime_Classification_Training.ipynb)
 and run its **first code cell: Launch OpenCV-assisted saved review**
 (`launch-saved-review-dashboard`). Authorize Drive when prompted, review the

@@ -1,0 +1,67 @@
+"""Local CPU inference server. Uploads are temporary and removed after each request."""
+import argparse
+import os
+import tempfile
+import cv2
+from pathlib import Path
+from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import RequestEntityTooLarge
+from scripts.inference import InferenceEngine, WARNING
+
+ROOT=Path(__file__).resolve().parents[1]
+DEFAULT_CHECKPOINT=ROOT/'models'/'experimental_cnn.pth'
+
+
+def create_app(checkpoint=None):
+    app=Flask(__name__)
+    app.config['MAX_CONTENT_LENGTH']=64*1024**2
+    engine=InferenceEngine(checkpoint or os.environ.get('CRIMESCOPE_CHECKPOINT',DEFAULT_CHECKPOINT))
+    app.extensions['inference_engine']=engine
+
+    @app.after_request
+    def headers(response):
+        response.headers['Cache-Control']='no-store'
+        response.headers['X-Content-Type-Options']='nosniff'
+        response.headers['Content-Security-Policy']="default-src 'self'; img-src 'self' data:; media-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        return response
+
+    @app.get('/')
+    def index():return render_template('index.html')
+
+    @app.get('/api/model')
+    def metadata():return jsonify(engine.metadata)
+
+    @app.post('/api/predict')
+    def predict():
+        upload=request.files.get('video')
+        if upload is None or not upload.filename:
+            return jsonify(error='Choose a video file.',warning=WARNING),400
+        suffix=Path(upload.filename).suffix.lower()
+        if suffix not in {'.mp4','.avi','.mov','.mkv','.webm'}:
+            return jsonify(error='Supported formats: MP4, AVI, MOV, MKV and WebM.',warning=WARNING),415
+        try:
+            with tempfile.TemporaryDirectory(prefix='crimescope-upload-') as temporary:
+                path=Path(temporary)/('video'+suffix)
+                upload.save(path)
+                result=engine.predict(path)
+            return jsonify(result)
+        except (ValueError,RuntimeError,cv2.error) as exc:
+            app.logger.info('Video inference rejected: %s',exc)
+            return jsonify(error='Unable to decode this video. Try a readable MP4 or AVI file.',warning=WARNING),422
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def too_large(error):return jsonify(error='Video exceeds the 64 MB upload limit.',warning=WARNING),413
+
+    return app
+
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description='CrimeScope UNVALIDATED experimental video inference')
+    parser.add_argument('--checkpoint',default=str(DEFAULT_CHECKPOINT))
+    parser.add_argument('--port',type=int,default=8000)
+    args=parser.parse_args()
+    import torch
+    from waitress import serve
+    torch.set_num_threads(2)
+    print(f'CrimeScope inference: http://127.0.0.1:{args.port} — {WARNING}',flush=True)
+    serve(create_app(args.checkpoint),host='127.0.0.1',port=args.port,threads=2)

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CrimeScope AI · Experimental video inference</title><link rel="icon" href="/static/favicon.svg"><link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
+<body>
+<header><a class="brand" href="/">CS<span>CrimeScope <b>AI</b></span></a><span class="tag">RESEARCH PROTOTYPE</span><span class="status" id="model-status">Checking model…</span></header>
+<main>
+<div class="warning" role="note"><strong>UNVALIDATED EXPERIMENTAL</strong><span>Model scores are not evidence of a crime. Labels and incident independence remain unresolved.</span></div>
+<div class="intro"><div class="eyebrow">VIDEO INFERENCE / 01</div><h1>A closer look.<br><span>An experimental prediction.</span></h1><p>Upload a clip to explore the saved four-class CNN. Three sampled frames produce one clip-level prediction.</p></div>
+<div class="workspace">
+<section class="panel upload-panel" aria-labelledby="upload-heading"><div class="panel-head"><h2 id="upload-heading"><span>01</span> Video input</h2><span class="small">LOCAL CPU</span></div>
+<label class="dropzone" id="dropzone" for="video-file"><span class="upload-icon" aria-hidden="true">↑</span><strong>Choose a video</strong><span>or drag and drop it here</span><small>MP4, AVI, MOV, MKV, WebM · up to 64 MB</small><input id="video-file" type="file" accept=".mp4,.avi,.mov,.mkv,.webm" aria-label="Upload video"></label>
+<div id="selected" hidden><div class="file-row"><strong id="filename"></strong><span id="filesize"></span></div><video id="preview" controls preload="metadata"></video></div>
+<button id="analyze" type="button" disabled>Analyze video <span aria-hidden="true">↗</span></button>
+<p class="privacy">Your video is processed locally and removed after inference.</p><p id="error" role="alert" hidden></p>
+</section>
+<section class="panel result-panel" aria-labelledby="result-heading"><div class="panel-head"><h2 id="result-heading"><span>02</span> Model output</h2><span class="small">FOUR CLASSES</span></div>
+<div id="empty"><div class="signal" aria-hidden="true">⌁</div><h3>Ready when you are.</h3><p>Your highest-scoring category and all four relative scores will appear here.</p></div>
+<div id="results" hidden><div class="eyebrow">HIGHEST MODEL SCORE</div><div class="prediction-row"><h3 id="prediction"></h3><strong id="confidence"></strong></div><p class="score-note">Uncalibrated confidence score · not a probability that a crime occurred.</p><div id="scores" aria-label="Four-class confidence scores"></div><div class="result-warning">UNVALIDATED EXPERIMENTAL<br><span>A forced choice among four categories. No Normal or Unknown class is available.</span></div><div class="frame-heading"><h4>Sampled model inputs</h4><span>RGB · 64 × 64</span></div><div id="frames" class="frames"></div><p id="sampling" class="small"></p></div>
+<p id="progress" role="status" aria-live="polite"></p>
+</section>
+</div>
+<details class="model-details"><summary>Model and preprocessing specification <span>View verified configuration +</span></summary><div class="spec-grid"><div><h4>Saved experimental CNN</h4><p id="architecture"></p><p id="checkpoint"></p></div><div><h4>Identical frame pipeline</h4><p>3 uniform frame indices → OpenCV linear resize → RGB 64 × 64 → CHW float32 / 255.</p><p>Frame logits are averaged before softmax. Audio is not analyzed.</p></div><div><h4>Interpretation limits</h4><p>Burglary · Stealing · Fighting · Vandalism, in checkpoint order.</p><p>No validated accuracy claim, incident determination, or generated crime scenario.</p></div></div></details>
+<footer><span>CrimeScope AI · Final Year Project</span><span>Experimental evidence, presented honestly.</span></footer>
+</main></body></html>

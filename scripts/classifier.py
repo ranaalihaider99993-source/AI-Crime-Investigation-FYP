@@ -11,6 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
 from scripts.common import seed_all, experiment_metadata
 from scripts.data import CLASSES, validate_manifest, split_signature
+from scripts.video_frames import sample_video_frames
 
 
 class CrimeCNN(nn.Module):
@@ -31,22 +32,12 @@ class VideoDataset(Dataset):
         self.size,self.frames=size,frames
     def __len__(self): return len(self.rows)
     def __getitem__(self,i):
-        r=self.rows[i]; cap=cv2.VideoCapture(r['path']); n=int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        images=[]; decoded={}
+        r=self.rows[i]
         try:
-            for pos in np.linspace(0,max(0,n-1),self.frames).astype(int):
-                # Very short clips repeat sample indices. Decode each position once;
-                # repeated seeks to frame zero can fail with some OpenCV backends.
-                if int(pos) in decoded:
-                    images.append(decoded[int(pos)])
-                    continue
-                cap.set(cv2.CAP_PROP_POS_FRAMES,int(pos)); ok,frame=cap.read()
-                if not ok: raise RuntimeError(f'Unreadable sampled frame in {r["path"]}')
-                frame=cv2.cvtColor(cv2.resize(frame,(self.size,self.size)),cv2.COLOR_BGR2RGB)
-                tensor=torch.from_numpy(frame.copy()).permute(2,0,1).float()/255
-                decoded[int(pos)]=tensor; images.append(tensor)
-        finally: cap.release()
-        return torch.stack(images),CLASSES.index(r['label'])
+            images,_,_=sample_video_frames(r['path'],self.size,self.frames)
+        except ValueError as exc:
+            raise RuntimeError(f'Unreadable sampled frame in {r["path"]}: {exc}') from exc
+        return images,CLASSES.index(r['label'])
 
 
 def metrics(y,pred):
