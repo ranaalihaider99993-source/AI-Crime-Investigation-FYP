@@ -31,11 +31,26 @@ def test_scores_are_not_events_or_crime_probability():
     result=aggregate([record('video','x',[.8,.1,.05,.05])])
     assert result['status']=='Unverified category hypotheses'
     assert not result['validated']
-    assert all('no visible act' in s['explanation'] for s in result['scenarios'])
+    assert all(s['explanation'].startswith('If human review establishes') for s in result['scenarios'])
+    assert all(s['observed_events']==[] and s['uncertainty'] for s in result['scenarios'])
+    assert all('ranking only' in s['model_basis'] for s in result['scenarios'])
     assert len(result['scenarios'])==3
     with pytest.raises(ValueError): aggregate([])
     bad=record('image','a',[.25]*4); bad['scores'].reverse()
     with pytest.raises(ValueError): aggregate([bad])
+
+
+@pytest.mark.parametrize('top_category',CLASSES)
+def test_readable_conditional_scenarios_preserve_ranking(top_category):
+    values=[.05]*4; values[CLASSES.index(top_category)]=.85
+    result=aggregate([record('image','one',values)])
+    first=result['scenarios'][0]
+    assert first['category']==top_category and first['relative_score']==pytest.approx(.85)
+    assert first['title'].startswith('Possible ') and 'category hypothesis' not in first['title']
+    assert 'If human review establishes' in first['explanation']
+    assert 'not' in first['explanation'] and first['observed_events']==[]
+    assert first['explanation_type']=='conditional category template; not an observed event'
+    assert first['uncertainty'] and first['model_basis']
 
 
 @pytest.fixture(scope='module')

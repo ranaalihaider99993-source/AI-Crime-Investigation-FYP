@@ -6,6 +6,23 @@ METHOD = ('Exact-byte duplicate files count once. Average unique file scores wit
           'modality, then equally average the available image/video modality means. '
           'No learned weights or probability calibration; rankings use all four classes.')
 
+# Category-conditioned writing templates, not detections or learned narratives.
+# The conditional requirements must never be replaced with asserted observations.
+SCENARIO_TEMPLATES = {
+    'Burglary': dict(title='Possible property-entry incident',
+        explanation='If human review establishes unauthorized entry to a property, an entry-related incident could be considered. The Burglary score does not establish that entry happened.',
+        uncertainty='Entry, authorization and intent are unverified; ordinary access remains possible.'),
+    'Stealing': dict(title='Possible unauthorized removal of property',
+        explanation='If human review establishes that property was taken without permission, a theft-related interpretation could be considered. The Stealing score does not show that any object was taken.',
+        uncertainty='Ownership, permission and any transfer of property are unknown; lawful handling remains possible.'),
+    'Fighting': dict(title='Possible physical confrontation',
+        explanation='If human review establishes hostile physical contact, a confrontation-related interpretation could be considered. The Fighting score does not establish that contact or aggression occurred.',
+        uncertainty='Contact, aggression and context are unverified; nonviolent activity remains possible.'),
+    'Vandalism': dict(title='Possible property-damage incident',
+        explanation='If human review establishes deliberate damage to property, a damage-related interpretation could be considered. The Vandalism score does not establish damage or intent.',
+        uncertainty='Damage, cause and intent are unknown; accidental damage or an undamaged scene remain possible.')
+}
+
 
 def aggregate(records):
     if not records: raise ValueError('At least one analyzed file is required')
@@ -31,10 +48,12 @@ def aggregate(records):
     scenarios = []
     for rank,i in enumerate(ranked[:3],1):
         contributions = '; '.join(f'{kind} mean {values[i]*100:.1f}%' for kind,values in means.items())
+        template=SCENARIO_TEMPLATES[CLASSES[i]]
         scenarios.append(dict(rank=rank,category=CLASSES[i],relative_score=combined[i],
-            title=f'{CLASSES[i]} category hypothesis — unverified',
-            explanation=f'Rank {rank} under the fixed CNN aggregation rule ({contributions}). '
-                'This is label-level compatibility only; no visible act, event sequence, suspect or motive was established.'))
+            title=template['title'],explanation=template['explanation'],uncertainty=template['uncertainty'],
+            model_basis=f"Rank {rank}: {CLASSES[i]} has a {combined[i]*100:.1f}% combined relative category score. This supports the ranking only, not the hypothetical details.",
+            modality_contributions=contributions,
+            explanation_type='conditional category template; not an observed event',observed_events=[]))
     return dict(scenarios=scenarios,scores=[dict(label=c,score=combined[i]) for i,c in enumerate(CLASSES)],
         status='Inconclusive / Low confidence' if weak or close else 'Unverified category hypotheses',
         method=METHOD,modality_means={kind:[dict(label=c,score=values[i]) for i,c in enumerate(CLASSES)] for kind,values in means.items()},

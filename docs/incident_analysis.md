@@ -30,12 +30,22 @@ The same inconclusive heuristic is retained: top score <50% or top-two margin
 
 ## Meaning of scenarios
 
-The three "scenarios" are explicitly unverified category hypotheses with short
-score-derived explanations. The renderer reports modality contributions only;
-it never invents objects, acts, chronology, suspects or motives. It abstains from
+The three "scenarios" are explicitly unverified category hypotheses. Their
+conditional explanations are separate from the CNN scoring basis; they never
+assert objects, acts, chronology, suspects or motives as observations. The renderer abstains from
 event reconstruction. User-supplied grouping does not certify a common incident.
 Neither model has Normal/Unknown, so even non-crime evidence gets forced scores.
 Percentages are uncalibrated relative model scores, not crime probabilities.
+
+The current cards expand those hypotheses into category-conditioned, human-readable
+templates: possible property entry, unauthorized property removal, physical
+confrontation or property damage. Each explanation begins with a conditional
+human-verification requirement, not an asserted event. Each card separates its
+model basis, hypothetical explanation and specific uncertainty. `observed_events`
+is always empty; these templates never extract observed actions, people or time
+sequences. This is deterministic text generation, not a trained scenario model.
+Scores, ranking, checkpoints and aggregation are unchanged. Repetitive caveats,
+modality contributions and technical records remain in collapsed Advanced Details.
 
 Hashes, model architecture, preprocessing, file-level predictions, full four-class
 scores and aggregation details are collapsed in Advanced Details. No review,

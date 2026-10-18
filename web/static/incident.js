@@ -45,7 +45,11 @@
       data.scenarios.forEach(item => {
         const article = document.createElement('article'), heading = document.createElement('h3'), score = document.createElement('strong'), explanation = document.createElement('p');
         article.className = 'scenario-card'; heading.textContent = `${item.rank}. ${item.title}`; score.textContent = `${(item.relative_score*100).toFixed(1)}% relative score`; explanation.textContent = item.explanation;
-        article.append(heading,score,explanation); scenarios.append(article);
+        const label = document.createElement('h4'); label.textContent = 'Hypothetical explanation';
+        const basis = document.createElement('p'), uncertainty = document.createElement('p');
+        basis.className = 'scenario-basis'; basis.textContent = `Model basis: ${item.model_basis}`;
+        uncertainty.className = 'scenario-uncertainty'; uncertainty.textContent = `Uncertainty: ${item.uncertainty}`;
+        article.append(heading,score,label,explanation,basis,uncertainty); scenarios.append(article);
       });
       const uncertainties = $('incident-uncertainties'); uncertainties.replaceChildren();
       data.uncertainties.forEach(text => { const li = document.createElement('li'); li.textContent = text; uncertainties.append(li); });
@@ -53,7 +57,7 @@
       for (const text of [data.method,data.display_rule,data.ranking_note,`${data.unique_files} unique file(s); ${data.duplicates_ignored} exact duplicate upload(s) ignored.`]) {
         const p = document.createElement('p'); p.textContent = text; technical.append(p);
       }
-      const pre = document.createElement('pre'); pre.textContent = JSON.stringify({scores:data.scores,modality_means:data.modality_means,files:data.files},null,2); technical.append(pre);
+      const pre = document.createElement('pre'); pre.textContent = JSON.stringify({scores:data.scores,modality_means:data.modality_means,scenario_method:'Category-conditioned templates, not a trained narrative model',scenarios:data.scenarios,files:data.files},null,2); technical.append(pre);
       $('incident-advanced').open = false; $('incident-results').hidden = false; $('incident-progress').textContent = 'Analysis complete. Unverified hypotheses only; no incident facts established.';
     } catch (failure) { fail(failure.message); $('incident-progress').textContent = ''; }
     finally { busy = false; input.disabled = false; button.disabled = !selected.length; }
