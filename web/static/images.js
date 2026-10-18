@@ -22,11 +22,7 @@
       const body = new FormData(); [...input.files].forEach(file => body.append('images', file));
       const response = await fetch('/api/images/analyze', {method:'POST', body});
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Inspection failed.');
-      const brief = $('image-brief'); brief.replaceChildren();
-      for (const [key, title] of [['observations','Measured observations'],['hypotheses','Hypotheses'],['uncertainty','Unknowns and limitations']]) {
-        const h = document.createElement('h4'), list = document.createElement('ul'); h.textContent = title;
-        data.scenario[key].forEach(text => { const li = document.createElement('li'); li.textContent = text; list.append(li); }); brief.append(h, list);
-      }
+      CrimeScopeNarrative.render($('image-brief'), data.narrative);
       const provenance = $('image-provenance'); provenance.replaceChildren();
       data.images.forEach(item => { const p = document.createElement('p'); p.textContent = `${item.image_id}: ${item.width} × ${item.height}, ${item.bytes} bytes; SHA-256 ${item.sha256}`; provenance.append(p); });
       const p = document.createElement('p'); p.textContent = data.preprocessing; provenance.append(p);

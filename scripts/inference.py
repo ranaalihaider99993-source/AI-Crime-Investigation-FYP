@@ -1,4 +1,4 @@
-"""Pinned experimental checkpoint inference. No training, scenarios or review writes."""
+"""Pinned video inference with abstaining evidence narratives; no review writes."""
 import base64
 import hashlib
 import threading
@@ -8,6 +8,7 @@ import torch
 from scripts.classifier import CrimeCNN
 from scripts.data import CLASSES
 from scripts.video_frames import sample_video_frames
+from scripts.evidence_narrative import build_narrative
 
 CHECKPOINT_SHA256 = 'a31794fd43f0a736d63702806a0c838af266b3536867a65da4cd74b4082b5ab6'
 WARNING = 'UNVALIDATED EXPERIMENTAL — model scores are not evidence of a crime.'
@@ -53,4 +54,7 @@ class InferenceEngine:
         return dict(prediction=CLASSES[int(scores.argmax())],
                     scores=[dict(label=label,score=float(scores[i])) for i,label in enumerate(CLASSES)],
                     preprocessing=details,frames=thumbnails,model=self.metadata,
-                    warning=WARNING,validated=False)
+                    warning=WARNING,validated=False,
+                    narrative=build_narrative('video', [dict(id=f'frame-{index}',
+                        description=f'Decoded sampled frame at index {index}; RGB 64 × 64. No action annotation is available.')
+                        for index in dict.fromkeys(details['sampled_indices'])]))

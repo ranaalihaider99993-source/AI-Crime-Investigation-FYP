@@ -54,7 +54,10 @@ def test_training_and_checkpoints(tmp_path):
 
 def test_notebooks():
     notebooks=list(Path('notebooks').glob('*.ipynb'))
-    assert len(notebooks)==4
+    assert {p.name for p in notebooks} == {
+        '01_Dataset_Inspection.ipynb', '02_Crime_Classification_Training.ipynb',
+        '03_Scenario_GRU_Training.ipynb', '04_Model_Evaluation.ipynb',
+        '05_Reviewed_Image_Evidence.ipynb'}
     for p in notebooks:
         book=nbformat.read(p,as_version=4); nbformat.validate(book)
         for cell in book.cells:

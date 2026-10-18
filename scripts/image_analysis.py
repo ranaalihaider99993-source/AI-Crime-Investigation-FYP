@@ -3,6 +3,7 @@ import hashlib
 import io
 import warnings
 from PIL import Image, ImageOps
+from scripts.evidence_narrative import build_narrative
 
 MAX_IMAGES = 6
 MAX_BYTES = 8 * 1024**2
@@ -43,7 +44,9 @@ def analyze_images(payloads):
     if not 1 <= len(payloads) <= MAX_IMAGES:
         raise ValueError('Choose between 1 and 6 images.')
     images = [inspect_image(data, i + 1) for i, data in enumerate(payloads)]
-    return dict(warning=WARNING, semantic_model_available=False, images=images,
+    narrative = build_narrative('images', [dict(id=item['image_id'], description=
+        f"Decoded still image: {item['width']} × {item['height']} pixels; SHA-256 {item['sha256']}.") for item in images])
+    return dict(warning=WARNING, semantic_model_available=False, images=images, narrative=narrative,
                 preprocessing='EXIF orientation → RGB → bilinear aspect-preserving black pad 128×128; future tensor CHW float32 /255.',
                 scenario=dict(
                     title='Experimental evidence brief — not a crime reconstruction',
